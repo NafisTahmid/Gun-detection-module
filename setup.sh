@@ -20,6 +20,11 @@ sh scripts/dependency_install.sh $script_loc/src/program.py
 
 echo "Dependencies are up to date.... Continuing Installation"
 
+# Accelerating Hardware
+sudo nvpmodel -m 0
+sudo jetson_clocks
+
+
 # Creating Service 
 
 # Check if the video_process service is already running
@@ -103,6 +108,12 @@ rm -f /etc/systemd/system/videoprocess.service
 systemctl daemon-reload
 
 echo "Service 'videoprocess' has been removed from the system."
+
+if [ -f "camera_config.json" ]; then
+    rm -f camera_config.json
+fi
+
+
 
 rm -f remove.sh
 
