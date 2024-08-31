@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Status</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <script src="/static/main.js" defer></script>
+    <script src="/static/utils.js" defer></script>
+    <script src="/static/camera.js" defer></script>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <img src="../static/accelx-logo.png" alt="logo">
+            <a href="https://acceleye.com">AccelEye</a>
+        </header>
+        <div class="innerContainer">
+
+            <h1>Video Server Fixed ID: <b>{{ fixed_vs_server }}</b></h1>
+            <div class="section_ip">
+                <p>IP Address: {{ ip_address }}</p>
+                <p>Current Time: <span id="current_time">{{ current_time }}</span></p>
+            </div>
+
+            <div class="section">
+                <div class="tag-container">
+                    <h4>Camera Status</h4>
+                </div>
+                <table id="camera_table">
+                    <thead>
+                        <tr>
+                            <th>Serial</th>
+                            <th>Address</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Data will be populated here -->
+                    </tbody>
+                </table>
+                <p id="error_message"></p>
+            </div>
+
+            {% if video_server_status %}
+            <div class="video-server-status" id="video_server_status">
+                <p>{{ video_server_status }}</p>
+            </div>
+            {% endif %}
+            <!-- <div id="change_server_warning" class="warning">
+                <p>Warning: Changing the video server ID will result in the permanent loss of all data. Please consult with the administrator before proceeding with any modifications.</p>
+            </div> -->
+            <div id="button-cluster">
+                <button id="restart_server_button" onclick="handleRestartClick()">Restart</button>
+                <button id="change_server_button" onclick="showForm()">Change Video Server</button>
+            </div>
+            <form id="change_server_form" action="/" method="post" onsubmit="submitForm(event)">
+                <div class="input-group">
+                    <label for="video_server_id">Enter Video Server ID</label>
+                    <input type="text" id="video_server_id" name="video_server_id" required>
+                </div>
+                <button type="submit">Submit</button>
+                <button id="cancel_change_server_button" onclick="hideForm()">Cancel</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <!-- Loading Section -->
+    <div id="loading_overlay" class="loading-overlay">
+        <div class="loading-content">
+            Restarting... Please wait.
+        </div>
+    </div>
+</body>
+
+</html>

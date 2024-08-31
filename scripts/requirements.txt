@@ -1,0 +1,7 @@
+aiohttp
+aiohttp-jinja2
+jinja2
+websockets
+requests
+python-dotenv
+numpy
