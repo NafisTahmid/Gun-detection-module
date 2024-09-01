@@ -1,6 +1,50 @@
 #!/bin/bash
 
-if python3 -c "import cv2; print(cv2.cuda.getCudaEnabledDeviceCount())" > /dev/null 2>&1; then
+# Function to detect the Jetson Nano version
+get_jetson_nano_version() {
+    # Extract just the major version (e.g., 32.4.4) from the full version string
+    if dpkg -l | grep -q nvidia-l4t-core; then
+        version=$(dpkg -l | grep nvidia-l4t-core | awk '{print $3}' | cut -d'-' -f1)
+        echo "Detected Jetson Nano version: $version"
+    else
+        echo "NVIDIA Jetson packages not found. Exiting..."
+        exit 1
+    fi
+}
+
+# Function to determine compatible CUDA version and install necessary packages
+install_cuda_dependencies() {
+    local jetson_version=$1
+
+    case $jetson_version in
+        32.4.4)
+            # Jetson Nano (L4T 32.4.4)
+            CUDA_VERSION="10.2"
+            ;;
+        32.5.1)
+            # Example for Jetson Nano 4GB (L4T 32.5.1)
+            CUDA_VERSION="10.2"
+            ;;
+        32.7.1)
+            # Example for Jetson Nano 4GB (L4T 32.7.1)
+            CUDA_VERSION="11.4"
+            ;;
+        *)
+            echo "Unsupported Jetson Nano version: $jetson_version"
+            exit 1
+            ;;
+    esac
+
+    # Install CUDA dependencies based on the determined version
+    echo "Installing CUDA $CUDA_VERSION dependencies..."
+    sudo apt-get install -y cuda-toolkit-$CUDA_VERSION || { echo "Failed to install CUDA $CUDA_VERSION. Exiting..."; exit 1; }
+}
+
+# Check CUDA-enabled devices
+cuda_count=$(python3 -c "import cv2; print(cv2.cuda.getCudaEnabledDeviceCount())" 2>/dev/null)
+
+# Ensure cuda_count is a valid number and check if greater than 0
+if [ ! -z "$cuda_count" ] && [ "$cuda_count" -gt 0 ]; then
     echo "OpenCV with CUDA support is already installed for Python 3."
     sudo apt-get install -y build-essential cmake git python3-pip curl pkg-config libgtk-3-dev libavcodec-dev libavformat-dev libswscale-dev libv4l-dev libxvidcore-dev libx264-dev libjpeg-dev libpng-dev libtiff-dev gfortran openexr libatlas-base-dev python3-dev python3-numpy libtbb2 libtbb-dev libdc1394-22-dev || { echo "Failed to install dependencies. Exiting..."; exit 1; }
     exit 0
@@ -9,32 +53,37 @@ fi
 # Set noninteractive mode for apt-get
 export DEBIAN_FRONTEND=noninteractive
 
-sudo sudo apt-get purge *libopencv*
+# Remove existing OpenCV packages
+sudo apt-get purge -y *libopencv* || { echo "Failed to remove existing OpenCV packages. Exiting..."; exit 1; }
+echo "OpenCV packages removed."
 
 # Update system
 sudo apt update || { echo "Failed to update system. Exiting..."; exit 1; }
 sudo apt upgrade -y || { echo "Failed to upgrade system. Exiting..."; exit 1; }
 
-# Install dependencies
+# Install common dependencies
+sudo apt-get install -y build-essential cmake git python3-pip curl pkg-config libgtk-3-dev libavcodec-dev libavformat-dev libswscale-dev libv4l-dev libxvidcore-dev libx264-dev libjpeg-dev libpng-dev libtiff-dev gfortran openexr libatlas-base-dev python3-dev python3-numpy libtbb2 libtbb-dev libdc1394-22-dev || { echo "Failed to install dependencies. Exiting..."; exit 1; }
 
-# Install CUDA and CuDNN - Follow NVIDIA's official documentation
+# Detect Jetson Nano version and install CUDA dependencies
+get_jetson_nano_version
+install_cuda_dependencies "$version"
 
-# Clone/OpenCV 4.5.0
-mkdir -p ~/opencv_build && cd ~/opencv_build
+# Clone and build OpenCV 4.5.0
+mkdir -p ~/opencv_build && cd ~/opencv_build || { echo "Failed to create or access opencv_build directory. Exiting..."; exit 1; }
+
 if [ ! -d "opencv-4.5.0" ]; then
-    wget https://github.com/opencv/opencv/archive/4.5.0.zip
-    unzip 4.5.0.zip && rm 4.5.0.zip
+    wget https://github.com/opencv/opencv/archive/4.5.0.zip || { echo "Failed to download OpenCV 4.5.0. Exiting..."; exit 1; }
+    unzip 4.5.0.zip && rm 4.5.0.zip || { echo "Failed to unzip OpenCV 4.5.0. Exiting..."; exit 1; }
 fi
 
-# Clone/OpenCV Contrib 4.5.0
 if [ ! -d "opencv_contrib-4.5.0" ]; then
-    wget https://github.com/opencv/opencv_contrib/archive/4.5.0.zip
-    unzip 4.5.0.zip && rm 4.5.0.zip
+    wget https://github.com/opencv/opencv_contrib/archive/4.5.0.zip || { echo "Failed to download OpenCV contrib modules. Exiting..."; exit 1; }
+    unzip 4.5.0.zip && rm 4.5.0.zip || { echo "Failed to unzip OpenCV contrib modules. Exiting..."; exit 1; }
 fi
 
 # Build OpenCV
-cd opencv-4.5.0
-mkdir -p build && cd build
+cd opencv-4.5.0 || { echo "Failed to change directory to opencv-4.5.0. Exiting..."; exit 1; }
+mkdir -p build && cd build || { echo "Failed to create or access build directory. Exiting..."; exit 1; }
 
 cmake -D CMAKE_BUILD_TYPE=RELEASE \
       -D OPENCV_EXTRA_MODULES_PATH=~/opencv_build/opencv_contrib-4.5.0/modules \
@@ -53,15 +102,15 @@ cmake -D CMAKE_BUILD_TYPE=RELEASE \
       -D PYTHON3_LIBRARY=/usr/lib/python3.6 \
       -D PYTHON3_NUMPY_INCLUDE_DIRS=/usr/lib/python3/dist-packages/numpy/core/include \
       -D BUILD_EXAMPLES=OFF \
-      -D CMAKE_INSTALL_PREFIX=/usr/local ..
+      -D CMAKE_INSTALL_PREFIX=/usr/local .. || { echo "Failed to configure OpenCV build. Exiting..."; exit 1; }
 
-make -j$(nproc)
-sudo make install
-sudo ldconfig
+make -j$(nproc) || { echo "Failed to build OpenCV. Exiting..."; exit 1; }
+sudo make install || { echo "Failed to install OpenCV. Exiting..."; exit 1; }
+sudo ldconfig || { echo "Failed to update library cache. Exiting..."; exit 1; }
 
 # Cleanup
 if [ -d ~/opencv_build ]; then
-    rm -r ~/opencv_build
+    rm -rf ~/opencv_build || { echo "Failed to remove opencv_build directory. Exiting..."; exit 1; }
     echo "Cleanup completed."
 fi
 
