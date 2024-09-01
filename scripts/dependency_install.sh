@@ -8,6 +8,16 @@ if [[ ! -f "$requirements_file" ]]; then
     exit 1
 fi
 
+# Check if pip3 is installed
+if ! command -v pip3 &> /dev/null; then
+    echo "pip3 is not installed. Installing pip3..."
+    sudo apt update && sudo apt install -y python3-pip
+    if [[ $? -ne 0 ]]; then
+        echo "Failed to install pip3. Please install it manually."
+        exit 1
+    fi
+fi
+
 # Read dependencies from requirements.txt
 dependencies=$(grep -E '^[^#]' "$requirements_file" | awk '{print $1}' | grep -v '^--')
 
@@ -29,28 +39,3 @@ for dependency in $dependencies; do
         fi
     fi
 done
-
-
-
-
-
-# python_file="$1"
-
-# # Extract dependencies from the Python file
-# dependencies=$(grep -E '^\s*import\s+|^from\s+\w+\s+import' "$python_file" | awk '{print $NF}')
-
-# # Check for `from dotenv import load_dotenv`
-# if grep -q 'from dotenv import load_dotenv' "$python_file"; then
-#     dependencies+=" python-dotenv"
-# fi
-
-# for dependency in $dependencies; do
-#     # Check if the dependency is a system package
-#     if python3 -c "import $dependency" &> /dev/null; then
-#         echo "$dependency is already inside the system. Continuing..."
-#     else
-#         # If not a system package, install it using pip
-#         sudo -H python3 -m pip install --quiet --no-input "$dependency"
-#         echo "$dependency has been installed successfully. Continuing..."
-#     fi
-# done
