@@ -18,6 +18,22 @@ if ! command -v pip3 &> /dev/null; then
     fi
 fi
 
+# Install development tools for building Python packages
+echo "Installing development tools..."
+sudo apt install -y build-essential libssl-dev libffi-dev python3-dev
+if [[ $? -ne 0 ]]; then
+    echo "Failed to install development tools. Please check the error messages above."
+    exit 1
+fi
+
+# Upgrade pip and setuptools
+echo "Upgrading pip and setuptools..."
+python3 -m pip install --upgrade pip setuptools
+if [[ $? -ne 0 ]]; then
+    echo "Failed to upgrade pip and setuptools. Please check the error messages above."
+    exit 1
+fi
+
 # Read dependencies from requirements.txt
 dependencies=$(grep -E '^[^#]' "$requirements_file" | awk '{print $1}' | grep -v '^--')
 
@@ -31,7 +47,7 @@ for dependency in $dependencies; do
     else
         # If not installed, install it using pip
         echo "Installing $package_name..."
-        sudo -H python3 -m pip install --quiet --no-input "$package_name"
+        sudo -H python3 -m pip install --quiet --no-input --no-cache-dir "$package_name"
         if [[ $? -eq 0 ]]; then
             echo "$package_name has been installed successfully. Continuing..."
         else

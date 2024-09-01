@@ -2,6 +2,7 @@
 
 if python3 -c "import cv2; print(cv2.cuda.getCudaEnabledDeviceCount())" > /dev/null 2>&1; then
     echo "OpenCV with CUDA support is already installed for Python 3."
+    sudo apt-get install -y build-essential cmake git python3-pip curl pkg-config libgtk-3-dev libavcodec-dev libavformat-dev libswscale-dev libv4l-dev libxvidcore-dev libx264-dev libjpeg-dev libpng-dev libtiff-dev gfortran openexr libatlas-base-dev python3-dev python3-numpy libtbb2 libtbb-dev libdc1394-22-dev || { echo "Failed to install dependencies. Exiting..."; exit 1; }
     exit 0
 fi
 
@@ -15,7 +16,6 @@ sudo apt update || { echo "Failed to update system. Exiting..."; exit 1; }
 sudo apt upgrade -y || { echo "Failed to upgrade system. Exiting..."; exit 1; }
 
 # Install dependencies
-sudo apt-get install -y build-essential cmake git python3-pip curl pkg-config libgtk-3-dev libavcodec-dev libavformat-dev libswscale-dev libv4l-dev libxvidcore-dev libx264-dev libjpeg-dev libpng-dev libtiff-dev gfortran openexr libatlas-base-dev python3-dev python3-numpy libtbb2 libtbb-dev libdc1394-22-dev || { echo "Failed to install dependencies. Exiting..."; exit 1; }
 
 # Install CUDA and CuDNN - Follow NVIDIA's official documentation
 
