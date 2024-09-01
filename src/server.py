@@ -63,8 +63,10 @@ def get_secondary_ip_address(interface='eth0'):
         
         if len(ip_addresses) >= 2:
             return ip_addresses[1]  # Return the second IP address (secondary)
+        elif len(ip_addresses) == 1:
+            return ip_addresses[0]  # Return the primary IP address if secondary not found
         else:
-            return "Secondary IP address not found"
+            return "No IP address found"
     except subprocess.CalledProcessError as e:
         return f"Error executing command: {str(e)}"
     except Exception as e:
