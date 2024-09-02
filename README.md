@@ -32,16 +32,16 @@ Have git & a debian linux distro installed.
 
     Execute the setup script with sudo:
 
-`sudo sh setup.sh`
+`sudo bash setup.sh`
 
 ## Usage
 
 After setup.sh is done installing everything necessary to get the system up and running, you don't need to do anything. Everything is automated and will start working on it's own. The setup.sh, upon execution, will create two new shell scripts. toggle_service.sh & remove.sh
 
 You can execute the toggle_service.sh to start or stop the service according to your choice.
-`sudo sh toggle_service.sh`
+`sudo bash toggle_service.sh`
 You can execute the remove.sh to remove everything installed so far using setup.sh.
-`sudo sh remove.sh`
+`sudo bash remove.sh`
 ## Contributing
 
 Currently we are not taking any contributors
