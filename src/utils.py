@@ -435,7 +435,7 @@ def process_frames(thread_id, cam_id):
                         files = {'detect_image': (f'frame_v_{random_text}.jpg', violence_image, 'image/jpeg')}
                         print("if random_text: ", random_text)
                         #  detect['label']
-                        data = {'camera': cam_id, 'detect_event': 'violence'}
+                        data = {'camera': cam_id, 'detect_event': detect['label']}
                         print("vio if Data:" , data)
                         response = requests.post(detect_image_save, files=files, data=data)
                         print("response:", response)

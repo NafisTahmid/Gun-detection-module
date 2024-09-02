@@ -1,0 +1,5 @@
+remove.sh
+toggle_service.sh
+src/**/__pycache__/
+src/**/.env
+
