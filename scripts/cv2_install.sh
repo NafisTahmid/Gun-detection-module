@@ -18,16 +18,13 @@ install_cuda_dependencies() {
 
     case $jetson_version in
         32.4.4)
-            # Jetson Nano (L4T 32.4.4)
-            CUDA_VERSION="10.2"
+            CUDA_VERSION="10-2"
             ;;
-        32.5.1)
-            # Example for Jetson Nano 4GB (L4T 32.5.1)
-            CUDA_VERSION="10.2"
+        32.5.1 | 32.6.1 | 32.6.3)
+            CUDA_VERSION="10-2"
             ;;
-        32.7.1)
-            # Example for Jetson Nano 4GB (L4T 32.7.1)
-            CUDA_VERSION="11.4"
+        32.7.1 | 32.7.2 | 32.7.3 | 32.7.5)
+            CUDA_VERSION="10-2"
             ;;
         *)
             echo "Unsupported Jetson Nano version: $jetson_version"
