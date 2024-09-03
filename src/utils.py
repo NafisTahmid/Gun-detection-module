@@ -26,6 +26,7 @@ index = 0
 
 # .env Settings
 load_dotenv()
+fixed_vs_server = os.getenv("SERVER_ID")
 group_name = os.getenv("SERVER_ID")
 secret_key = os.getenv("SECRET_KEY")
 base_uri = os.getenv("URI")
@@ -35,9 +36,16 @@ else:
     socket_uri = base_uri.replace("https://", "wss://")
 
 connection_uri = socket_uri + "ws/video-process/" + group_name + "/"
-detect_image_save = base_uri + "camera/weapon-detect-images/"
+detect_image_save = base_uri + "camera/weapon-detect-images-create/"
+# detect_image_save = base_uri + "camera/weapon-detect-images/"
 camera_setups_url = base_uri + "camera/camera-setups/"
 cam_check_url_save = base_uri + "camera/checkcam-url-images/"
+headers = {
+            'accept': 'application/json',
+            'X-Custom-Secret-Key': secret_key,
+            'X-Custom-Server-Fixed-Id': fixed_vs_server
+        }
+
 
 capture_interval_seconds = int(os.getenv("CAPTURE_INTERVAL_SECONDS", 3))
 frame_no_change_interval = int(os.getenv("FRAME_NO_CHANGE_INTERVAL", 20))
@@ -247,7 +255,7 @@ def capture_frames(camera_url, cam_id, cam_type, threshold=float(os.getenv("THRE
                     no_frame = cv2.imencode('.jpg', no_signal_frame)[1].tobytes()
                     files = {'detect_image': (f'frame_{cam_id}.jpg', no_frame, 'image/jpeg')}
                     data = {'camera': cam_id, 'detect_event': 'No Signal'}
-                    response = requests.post(detect_image_save, files=files, data=data)
+                    response = requests.post(detect_image_save, files=files, headers=headers, data=data)
                     patch_data = {"camera_frame_cap_status": False}
                     api_url = f'{camera_setups_url}{cam_id}/'
 
@@ -280,7 +288,7 @@ def capture_frames(camera_url, cam_id, cam_type, threshold=float(os.getenv("THRE
                 files = {'detect_image': (f'frame_{cam_id}.jpg', no_frame, 'image/jpeg')}
 
                 data = {'camera': cam_id, 'detect_event': 'No Signal'}
-                response = requests.post(detect_image_save, files=files, data=data)
+                response = requests.post(detect_image_save, files=files, headers=headers, data=data)
                 patch_data = {"camera_frame_cap_status": False}
                 api_url = f'{camera_setups_url}{cam_id}/'
 
@@ -390,14 +398,14 @@ def process_frames(thread_id, cam_id):
                             files = {'detect_image': (f'frame_{random_text}.jpg', weapon_image, 'image/jpeg')}
 
                             data = {'camera': cam_id, 'detect_event': weapon}
-                            response = requests.post(detect_image_save, files=files, data=data)
+                            response = requests.post(detect_image_save, files=files, headers=headers, data=data)
                             print(f"Thread {thread_id} for Camera {cam_id}: Frame processed with Event detect.")
 
                         if not bboxes_list:
                             files = {'detect_image': (f'frame_{cam_id}.jpg', weapon_image, 'image/jpeg')}
 
                             data = {'camera': cam_id, 'detect_event': 'No Event'}
-                            response = requests.post(detect_image_save, files=files, data=data)
+                            response = requests.post(detect_image_save, files=files, headers=headers, data=data)
 
                             print(f"Thread {thread_id} for Camera {cam_id}: Frame processed with NO Event detect.")
                     
@@ -412,7 +420,7 @@ def process_frames(thread_id, cam_id):
 
                         data = {'camera': cam_id, 'detect_event': 'Detection N/A'}
                         print("Data:" , data)
-                        response = requests.post(detect_image_save, files=files, data=data)
+                        response = requests.post(detect_image_save, files=files, headers=headers, data=data)
                         print("response:", response)
                         print(f"Requested method is not allowed, please refer to API document for Camera {cam_id}")
 
@@ -437,7 +445,7 @@ def process_frames(thread_id, cam_id):
                         #  detect['label']
                         data = {'camera': cam_id, 'detect_event': detect['label']}
                         print("vio if Data:" , data)
-                        response = requests.post(detect_image_save, files=files, data=data)
+                        response = requests.post(detect_image_save, files=files, headers=headers, data=data)
                         print("response:", response)
                         #print(f"Requested method is not allowed, please refer to API document for Camera {cam_id}")
                         print(f'detect value for violence: {detect}')
@@ -448,7 +456,7 @@ def process_frames(thread_id, cam_id):
 
                         data = {'camera': cam_id, 'detect_event': 'No Violence'}
                         print("vio else Data:" , data)
-                        response = requests.post(detect_image_save, files=files, data=data)
+                        response = requests.post(detect_image_save, files=files, headers=headers, data=data)
                         print("response:", response)
                         #print(f"Requested method is not allowed, please refer to API document for Camera {cam_id}")
                         print(f'detect value for no violence: {detect}')
@@ -471,7 +479,7 @@ def process_frames(thread_id, cam_id):
 
                         data = {'camera': cam_id, 'detect_event': detect}
                         print("Data:" , data)
-                        response = requests.post(detect_image_save, files=files, data=data)
+                        response = requests.post(detect_image_save, files=files, headers=headers, data=data)
                         print("response:", response)
                         #print(f"Requested method is not allowed, please refer to API document for Camera {cam_id}")
                         print(f'detect value for fire: {detect}')
@@ -482,7 +490,7 @@ def process_frames(thread_id, cam_id):
 
                         data = {'camera': cam_id, 'detect_event': 'No Fire'}
                         print("Data:" , data)
-                        response = requests.post(detect_image_save, files=files, data=data)
+                        response = requests.post(detect_image_save, files=files, headers=headers, data=data)
                         print("response:", response)
                         #print(f"Requested method is not allowed, please refer to API document for Camera {cam_id}")
                         print(f'detect value for no fire: {detect}')
@@ -506,7 +514,7 @@ def process_frames(thread_id, cam_id):
 
             data = {'camera': cam_id, 'detect_event': 'API N/A'}
             print("Data:" , data)
-            response = requests.post(detect_image_save, files=files, data=data)
+            response = requests.post(detect_image_save, files=files, headers=headers, data=data)
             print("response:", response)
             print(f"Error processing frame: {e} for Camera {cam_id}")
 
