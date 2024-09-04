@@ -55,8 +55,8 @@ ml_server = os.getenv("SERVICE_URL", "http://192.168.1.52:8080/predictions/accel
 # Log
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
-pwd = os.getcwd()
-config_location = os.path.join(pwd, "src/server_config.json")
+pwd = os.path.dirname(os.path.abspath(__file__))
+config_location = os.path.join(pwd, "server_config.json")
 # Initialize the SignalHandler
 signal_handler = SignalHandler()
 

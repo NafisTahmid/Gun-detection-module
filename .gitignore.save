@@ -1,5 +1,6 @@
 remove.sh
 toggle_service.sh
 src/**/__pycache__/
-src/**/.env
-src/**/server_config.json
+src/**/
+.env
+

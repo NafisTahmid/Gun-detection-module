@@ -29,7 +29,6 @@ camera_threads = {}
 frame_queues = {}
 max_queue_size = 30
 max_processing_threads = 3
-index = 0
 
 # .env Settings
 fixed_vs_server = os.getenv("SERVER_ID")
@@ -48,9 +47,11 @@ capture_interval_seconds = int(os.getenv("CAPTURE_INTERVAL_SECONDS", 3))
 frame_no_change_interval = int(os.getenv("FRAME_NO_CHANGE_INTERVAL", 20))
 weapon_detection_url = os.getenv("WEAPON_DETECTION_URL", "http://192.168.1.52:8080/predictions/accelx-weapon-dt-yolos-detr")
 
-pwd = os.getcwd()
-config_location = os.path.join(pwd, "src/server_config.json")
-env_location = os.path.join(pwd, "src/.env")
+pwd = os.path.dirname(os.path.abspath(__file__))
+static_path = os.path.join(pwd, 'static')
+template_dir = os.path.join(pwd, 'templates')
+config_location = os.path.join(pwd, "server_config.json")
+env_location = os.path.join(pwd, ".env")
 # Global variables
 
 def get_secondary_ip_address(interface='eth0'):
@@ -81,7 +82,7 @@ fixed_server = True
 
 # Set up aiohttp app and Jinja2 template rendering
 app = web.Application()
-aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader('templates'))
+aiohttp_jinja2.setup(app, loader=jinja2.FileSystemLoader(template_dir))
 
 # Initialize the SignalHandler
 
@@ -389,7 +390,7 @@ for sig in (signal.SIGINT, signal.SIGTERM):
 
 app.router.add_get('/', index)
 app.router.add_post('/', index)
-app.router.add_static('/static', 'static')
+app.router.add_static('/static', static_path)
 
 if __name__ == '__main__':
     web.run_app(app, host='0.0.0.0', port=80)
