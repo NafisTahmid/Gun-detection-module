@@ -26,22 +26,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                 idCell.innerText = camera.camera_id;
                 row.appendChild(idCell);
 
-                // Extract the part after @ and before /
-                const urlParts = camera.camera_url.split('@')[1]; // Get the part after '@'
-                if (urlParts) {
-                    const [hostPart] = urlParts.split('/'); // Get the part before '/'
-                    const [ipAddress, port] = hostPart.split(':'); // Split IP and port
+                const url = camera.camera_url;
+                let ipAddress = "";
+                let port = "";
 
-                    // Create and append Address cell
-                    const addressCell = document.createElement('td');
-                    addressCell.innerText = port ? `${ipAddress}:${port}` : ipAddress;
-                    row.appendChild(addressCell);
+                // Check if the URL contains '@' (indicating user credentials are present)
+                if (url.includes('@')) {
+                    const urlParts = url.split('@')[1]; // Get the part after '@'
+                    if (urlParts) {
+                        const [hostPart] = urlParts.split('/'); // Get the part before '/'
+                        [ipAddress, port] = hostPart.split(':'); // Split IP and port
+                    }
                 } else {
-                    // Handle case where camera URL doesn't have '@' or '/' (fallback)
-                    const addressCell = document.createElement('td');
-                    addressCell.innerText = 'N/A';
-                    row.appendChild(addressCell);
+                    // If no '@' is found, split from '://' and get the host part
+                    const urlParts = url.split('://')[1];
+                    if (urlParts) {
+                        const [hostPart] = urlParts.split('/'); // Get the part before '/'
+                        [ipAddress, port] = hostPart.split(':'); // Split IP and port
+                    }
                 }
+
+                // Create and append Address cell
+                const addressCell = document.createElement('td');
+                addressCell.innerText = port ? `${ipAddress}:${port}` : ipAddress;
+                row.appendChild(addressCell);
+
 
                 // Camera Type
                 const typeCell = document.createElement('td');
