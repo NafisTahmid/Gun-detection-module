@@ -27,7 +27,7 @@ import utils
 # Thread Settings
 camera_threads = {}
 frame_queues = {}
-max_queue_size = 30
+max_queue_size = 5
 max_processing_threads = 3
 
 # .env Settings
@@ -54,7 +54,7 @@ config_location = os.path.join(pwd, "server_config.json")
 env_location = os.path.join(pwd, ".env")
 # Global variables
 
-def get_secondary_ip_address(interface='eth0'):
+def get_ip_addresses(interface):
     try:
         # Run the 'ip addr show' command to get information about the network interface
         output = subprocess.check_output(['ip', 'addr', 'show', interface], universal_newlines=True)
@@ -62,20 +62,49 @@ def get_secondary_ip_address(interface='eth0'):
         # Find all the 'inet' entries in the output
         ip_addresses = re.findall(r'inet (\d+\.\d+\.\d+\.\d+)', output)
         
-        if len(ip_addresses) >= 2:
-            return ip_addresses[1]  # Return the second IP address (secondary)
-        elif len(ip_addresses) == 1:
-            return ip_addresses[0]  # Return the primary IP address if secondary not found
+        return ip_addresses
+    except subprocess.CalledProcessError as e:
+        return []  # Return an empty list if there's an error
+    except Exception as e:
+        return []  # Return an empty list if there's an unexpected error
+
+def get_all_interfaces():
+    try:
+        # Run the 'ip link show' command to get a list of network interfaces
+        output = subprocess.check_output(['ip', 'link', 'show'], universal_newlines=True)
+        
+        # Extract interface names from the output
+        interfaces = re.findall(r'^\d+: (\w+):', output, re.MULTILINE)
+        
+        return interfaces
+    except subprocess.CalledProcessError as e:
+        return []  # Return an empty list if there's an error
+    except Exception as e:
+        return []  # Return an empty list if there's an unexpected error
+
+def get_secondary_ip_address():
+    try:
+        # Get a list of all network interfaces
+        interfaces = get_all_interfaces()
+        
+        # Collect IP addresses from all interfaces
+        all_ip_addresses = []
+        for interface in interfaces:
+            ip_addresses = get_ip_addresses(interface)
+            all_ip_addresses.extend(ip_addresses)
+        
+        # Return the second IP address if available
+        if len(all_ip_addresses) >= 2:
+            return all_ip_addresses[1]  # Return the second IP address (secondary)
+        elif len(all_ip_addresses) == 1:
+            return all_ip_addresses[0]  # Return the primary IP address if secondary not found
         else:
             return "No IP address found"
-    except subprocess.CalledProcessError as e:
-        return f"Error executing command: {str(e)}"
     except Exception as e:
         return f"An error occurred: {str(e)}"
 
 # Example usage
-interface = 'eth0'  # Replace with your network interface name
-ip_address = get_secondary_ip_address(interface)
+ip_address = get_secondary_ip_address()
 print(f"Local IP address: {ip_address}")
 
 fixed_server = True

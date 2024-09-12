@@ -20,7 +20,7 @@ from signal_handler import SignalHandler
 # Thread Settings
 camera_threads = {}
 frame_queues = {}
-max_queue_size = 30
+max_queue_size = 5
 max_processing_threads = 3
 index = 0
 
@@ -360,8 +360,11 @@ def process_frames(thread_id, cam_id):
                     print(f"Calling Gun API for subscription: {name}")
                     weapon_image = cv2.imencode('.jpg', processed_frame)[1].tobytes()
                     gun_url = ml_server + endpoint
-                    
+                    start_time = time.time()
                     res = requests.post(gun_url, data=weapon_image)
+                    end_time = time.time()
+                    
+                    print("Total Time Taken For ML: ", end_time - start_time)
                     detect = json.loads(res.content)
 
                     if 'probs' in detect and 'bboxes_scaled' in detect:
@@ -398,14 +401,23 @@ def process_frames(thread_id, cam_id):
                             files = {'detect_image': (f'frame_{random_text}.jpg', weapon_image, 'image/jpeg')}
 
                             data = {'camera': cam_id, 'detect_event': weapon}
+                            start_time_save = time.time()
                             response = requests.post(detect_image_save, files=files, headers=headers, data=data)
+                       
+                            end_time_save = time.time()
+                    
+                            print("Total Time Taken For Save: ", end_time_save - start_time_save)
                             print(f"Thread {thread_id} for Camera {cam_id}: Frame processed with Event detect.")
 
                         if not bboxes_list:
                             files = {'detect_image': (f'frame_{cam_id}.jpg', weapon_image, 'image/jpeg')}
 
                             data = {'camera': cam_id, 'detect_event': 'No Event'}
+                            start_time_save = time.time()
                             response = requests.post(detect_image_save, files=files, headers=headers, data=data)
+                            end_time_save = time.time()
+                    
+                            print("Total Time Taken For Save: ", end_time_save - start_time_save)
 
                             print(f"Thread {thread_id} for Camera {cam_id}: Frame processed with NO Event detect.")
                     

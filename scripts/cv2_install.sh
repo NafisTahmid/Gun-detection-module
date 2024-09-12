@@ -37,14 +37,19 @@ install_cuda_dependencies() {
     sudo apt-get install -y cuda-toolkit-$CUDA_VERSION || { echo "Failed to install CUDA $CUDA_VERSION. Exiting..."; exit 1; }
 }
 
-# Check CUDA-enabled devices
-cuda_count=$(python3 -c "import cv2; print(cv2.cuda.getCudaEnabledDeviceCount())" 2>/dev/null)
+# Check CUDA installation using nvcc
+cuda_version=$(nvcc --version 2>/dev/null | grep -oP '(?<=release\s)\d+\.\d+' || echo "not installed")
 
-# Ensure cuda_count is a valid number and check if greater than 0
-if [ ! -z "$cuda_count" ] && [ "$cuda_count" -gt 0 ]; then
-    echo "OpenCV with CUDA support is already installed for Python 3."
+# Ensure cuda_version is not "not installed"
+if [ "$cuda_version" != "not installed" ]; then
+    echo "CUDA version $cuda_version is installed."
+
+    # Install dependencies for OpenCV
     sudo apt-get install -y build-essential cmake git python3-pip curl pkg-config libgtk-3-dev libavcodec-dev libavformat-dev libswscale-dev libv4l-dev libxvidcore-dev libx264-dev libjpeg-dev libpng-dev libtiff-dev gfortran openexr libatlas-base-dev python3-dev python3-numpy libtbb2 libtbb-dev libdc1394-22-dev || { echo "Failed to install dependencies. Exiting..."; exit 1; }
+
     exit 0
+else
+    echo "CUDA is not installed. Proceeding with installation of dependencies and OpenCV."
 fi
 
 # Set noninteractive mode for apt-get
@@ -60,7 +65,7 @@ sudo apt upgrade -y || { echo "Failed to upgrade system. Exiting..."; exit 1; }
 
 # Install common dependencies
 sudo apt-get install -y build-essential cmake git python3-pip curl pkg-config libgtk-3-dev libavcodec-dev libavformat-dev libswscale-dev libv4l-dev libxvidcore-dev libx264-dev libjpeg-dev libpng-dev libtiff-dev gfortran openexr libatlas-base-dev python3-dev python3-numpy libtbb2 libtbb-dev libdc1394-22-dev || { echo "Failed to install dependencies. Exiting..."; exit 1; }
-
+sudo apt-get install nvidia-l4t-core
 # Detect Jetson Nano version and install CUDA dependencies
 get_jetson_nano_version
 install_cuda_dependencies "$version"
