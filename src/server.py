@@ -222,15 +222,13 @@ async def connect_to_websocket(ws_url, fixed_server):
         try:
             async with websockets.connect(uri) as websocket:
                 print(f"Connected to WebSocket server: fixed_server - {fixed_server}")
-                flag = False 
+                flag = False
                 await asyncio.sleep(2)
                 server_running_status = f"Server Is Running: {ws_url}"
                 print(f'server running status - {server_running_status}')
 
                 if fixed_server:
-
                     subs_url = base_uri + 'service/service-filter-vs/'
-
                     msg_send = {"server_fixed_id": ws_url, "ip_address": ip_address}
                     print(f'msg_send: {msg_send}')
                     msg_send_json = json.dumps(msg_send)
@@ -238,6 +236,7 @@ async def connect_to_websocket(ws_url, fixed_server):
                     msg = await websocket.recv()
                     msg_json = json.loads(msg)
                     print(f'msg_json: {msg_json}')
+
                     if 'status_code' in msg_json:
                         if msg_json.get('status_code') == 2000:
                             server_skey = msg_json.get('server_skey')
@@ -378,14 +377,14 @@ async def connect_to_websocket(ws_url, fixed_server):
                             await heartbeat_task
                         except asyncio.CancelledError:
                             pass
-        except Exception as e:
+
+        except (websockets.ConnectionClosed, ConnectionResetError) as e:
             print(f"Connection error: {e}")
             print("Reconnecting in 10 seconds...")
-            await utils.stop_all_threads()
-            await asyncio.sleep(10)
-            
-            #await restart_websocket_connection(os.getenv("SERVER_ID"), fixed_server=True)
-            #break
+            await asyncio.sleep(10)  # Backoff period before retry
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            await asyncio.sleep(10)  # Backoff period before retry
 
 async def on_startup(app):
     app['websocket_task'] = asyncio.ensure_future(connect_to_websocket(os.getenv("SERVER_ID"), fixed_server=True))

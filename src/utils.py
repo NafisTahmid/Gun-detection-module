@@ -230,41 +230,27 @@ def capture_frames(camera_url, cam_id, cam_type, threshold=float(os.getenv("THRE
     latency = int(os.getenv("LATENCY", 100))
     n = {}
     count = {}
-    if cam_type == 'jpeg':  
+    
+    if cam_type == 'jpeg':
         while cam_id in camera_threads and not (signal_handler.shutdown_requested or camera_threads[cam_id].capture_thread.stopped.is_set()):
             try:
-
                 response = requests.get(camera_url)
-                if response.status_code == 200:
-                    frame = cv2.imdecode(np.frombuffer(response.content, np.uint8), cv2.IMREAD_COLOR)
+                response.raise_for_status()  # Raise an error for bad responses
+                frame = cv2.imdecode(np.frombuffer(response.content, np.uint8), cv2.IMREAD_COLOR)
 
-                    frame_queue = frame_queues[cam_id]
-                    if frame_queue.qsize() < max_queue_size:
-                        absdiff_check = Frame.get_instance()
-                        accurate = absdiff_check.compare_frame(cam_id=cam_id, target_frame=frame, threshold=threshold)
-                        if accurate:
-                            frame_queue.put(frame)
-                else:
-                    print(f"Failed to fetch image from URL {camera_url}. Status code: {response.status_code}")
-                    no_signal_frame = np.zeros((height, width, 3), dtype=np.uint8)
-                    text_size = cv2.getTextSize("No Signal", cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
-                    text_x = (width - text_size[0]) // 2
-                    text_y = (height + text_size[1]) // 2
-                    cv2.putText(no_signal_frame, "No Signal", (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-                    cv2.putText(no_signal_frame, f"Camera {cam_id}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                    no_frame = cv2.imencode('.jpg', no_signal_frame)[1].tobytes()
-                    files = {'detect_image': (f'frame_{cam_id}.jpg', no_frame, 'image/jpeg')}
-                    data = {'camera': cam_id, 'detect_event': 'No Signal'}
-                    response = requests.post(detect_image_save, files=files, headers=headers, data=data)
-                    patch_data = {"camera_frame_cap_status": False}
-                    api_url = f'{camera_setups_url}{cam_id}/'
-
-                    requests.patch(api_url, json=patch_data)
-
-                    time.sleep(10)
-                    continue
-
+                frame_queue = frame_queues[cam_id]
+                if frame_queue.qsize() < max_queue_size:
+                    absdiff_check = Frame.get_instance()
+                    accurate = absdiff_check.compare_frame(cam_id=cam_id, target_frame=frame, threshold=threshold)
+                    if accurate:
+                        frame_queue.put(frame)
                 time.sleep(capture_interval_seconds)
+
+            except requests.exceptions.RequestException as req_err:
+                print(f"Request error: {req_err}")
+                handle_no_signal(cam_id, width, height)
+                time.sleep(10)
+
             except Exception as e:
                 print(f"Error capturing frame: {e}")
 
@@ -272,56 +258,58 @@ def capture_frames(camera_url, cam_id, cam_type, threshold=float(os.getenv("THRE
         cap = open_cam_rtsp(camera_url, width, height, latency)
         n[cam_id] = 0
         count[cam_id] = 0
+
         while cam_id in camera_threads and not (signal_handler.shutdown_requested or camera_threads[cam_id].capture_thread.stopped.is_set()):
-             # print(f"camera id: {cam_id}, cap: {cap}")
             if cap is None or not cap.isOpened():
                 print(f"Error: Unable to open camera for URI {camera_url}")
-                if cap is not None:
-                    cap.release()
-                no_signal_frame = np.zeros((height, width, 3), dtype=np.uint8)
-                text_size = cv2.getTextSize("No Signal", cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
-                text_x = (width - text_size[0]) // 2
-                text_y = (height + text_size[1]) // 2
-                cv2.putText(no_signal_frame, "No Signal", (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
-                cv2.putText(no_signal_frame, f"Camera {cam_id}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-                no_frame = cv2.imencode('.jpg', no_signal_frame)[1].tobytes()
-                files = {'detect_image': (f'frame_{cam_id}.jpg', no_frame, 'image/jpeg')}
-
-                data = {'camera': cam_id, 'detect_event': 'No Signal'}
-                response = requests.post(detect_image_save, files=files, headers=headers, data=data)
-                patch_data = {"camera_frame_cap_status": False}
-                api_url = f'{camera_setups_url}{cam_id}/'
-
-                requests.patch(api_url, json=patch_data)
+                handle_no_signal(cam_id, width, height)
                 time.sleep(10)
                 cap = open_cam_rtsp(camera_url, width, height, latency)
                 continue
 
-            ret, frame = cap.read()
-            
-            
-            if not ret:
-                cap.release()
-                time.sleep(1)
-                cap = open_cam_rtsp(camera_url, width, height, latency)
-                continue
-
-            frame_queue = frame_queues[cam_id]
-            if frame_queue.qsize() < max_queue_size:
-
-                absdiff_check = Frame.get_instance()
-                accurate = absdiff_check.compare_frame(cam_id=cam_id, target_frame=frame,threshold=threshold)
-                if accurate:
-                    print(f"Cam ID: {cam_id}! Ready For Processing")
-                    frame_queue.put(frame)
+            try:
+                ret, frame = cap.read()
+                if not ret:
+                    cap.release()
+                    time.sleep(1)
+                    cap = open_cam_rtsp(camera_url, width, height, latency)
                     continue
-                
-            
+
+                frame_queue = frame_queues[cam_id]
+                if frame_queue.qsize() < max_queue_size:
+                    absdiff_check = Frame.get_instance()
+                    accurate = absdiff_check.compare_frame(cam_id=cam_id, target_frame=frame, threshold=threshold)
+                    if accurate:
+                        print(f"Cam ID: {cam_id}! Ready For Processing")
+                        frame_queue.put(frame)
+
+            except Exception as e:
+                print(f"Error reading frame from RTSP: {e}")
 
         if cap is not None:
-            print("cap is released")
-            print(camera_threads[cam_id],camera_threads[cam_id].capture_thread.stopped.is_set())
+            print("Releasing camera capture")
             cap.release()
+
+def handle_no_signal(cam_id, width, height):
+    no_signal_frame = np.zeros((height, width, 3), dtype=np.uint8)
+    text_size = cv2.getTextSize("No Signal", cv2.FONT_HERSHEY_SIMPLEX, 1, 2)[0]
+    text_x = (width - text_size[0]) // 2
+    text_y = (height + text_size[1]) // 2
+    cv2.putText(no_signal_frame, "No Signal", (text_x, text_y), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 255), 2)
+    cv2.putText(no_signal_frame, f"Camera {cam_id}", (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    no_frame = cv2.imencode('.jpg', no_signal_frame)[1].tobytes()
+    
+    files = {'detect_image': (f'frame_{cam_id}.jpg', no_frame, 'image/jpeg')}
+    data = {'camera': cam_id, 'detect_event': 'No Signal'}
+    
+    try:
+        response = requests.post(detect_image_save, files=files, headers=headers, data=data)
+        response.raise_for_status()
+        patch_data = {"camera_frame_cap_status": False}
+        api_url = f'{camera_setups_url}{cam_id}/'
+        requests.patch(api_url, json=patch_data)
+    except requests.exceptions.RequestException as req_err:
+        print(f"Error posting no signal frame: {req_err}")
 
 def process_frames(thread_id, cam_id):
     global frame_queues, max_processing_threads, signal_handler
@@ -357,155 +345,174 @@ def process_frames(thread_id, cam_id):
                 print(f"Subscription Name: {name}, API Endpoint: {endpoint}")
                 name_lower = name.lower()
                 if "gun" in name_lower:
-                    print(f"Calling Gun API for subscription: {name}")
-                    weapon_image = cv2.imencode('.jpg', processed_frame)[1].tobytes()
-                    gun_url = ml_server + endpoint
-                    start_time = time.time()
-                    res = requests.post(gun_url, data=weapon_image)
-                    end_time = time.time()
-                    
-                    print("Total Time Taken For ML: ", end_time - start_time)
-                    detect = json.loads(res.content)
+                    try:
+                        
+                        print(f"Calling Gun API for subscription: {name}")
+                        weapon_image = cv2.imencode('.jpg', processed_frame)[1].tobytes()
+                        gun_url = ml_server + endpoint
+                        start_time = time.time()
+                        res = requests.post(gun_url, data=weapon_image)
+                        end_time = time.time()
+                        
+                        print("Total Time Taken For ML: ", end_time - start_time)
+                        detect = json.loads(res.content)
 
-                    if 'probs' in detect and 'bboxes_scaled' in detect:
-                        bboxes_list = detect['bboxes_scaled']
+                        if 'probs' in detect and 'bboxes_scaled' in detect:
+                            bboxes_list = detect['bboxes_scaled']
 
-                        probs_list = detect['probs']
-                        weapon = detect['id2label']['0']
-                        print(weapon)
-                        if probs_list and bboxes_list:
-                            for probs, bbox_scaled in zip(probs_list, bboxes_list):
+                            probs_list = detect['probs']
+                            weapon = detect['id2label']['0']
+                            print(weapon)
+                            if probs_list and bboxes_list:
+                                for probs, bbox_scaled in zip(probs_list, bboxes_list):
 
-                                if isinstance(bbox_scaled, (list, tuple)) and len(bbox_scaled) == 4:
-                                    x_min, y_min, x_max, y_max = bbox_scaled
+                                    if isinstance(bbox_scaled, (list, tuple)) and len(bbox_scaled) == 4:
+                                        x_min, y_min, x_max, y_max = bbox_scaled
 
-                                    image_width, image_height = processed_frame.shape[1], processed_frame.shape[0]
-                                    x_pixel = int(x_min)
-                                    y_pixel = int(y_min)
-                                    width_pixel = int((x_max - x_min))
-                                    height_pixel = int((y_max - y_min))
+                                        image_width, image_height = processed_frame.shape[1], processed_frame.shape[0]
+                                        x_pixel = int(x_min)
+                                        y_pixel = int(y_min)
+                                        width_pixel = int((x_max - x_min))
+                                        height_pixel = int((y_max - y_min))
 
-                                    bbox = (x_pixel, y_pixel, width_pixel, height_pixel)
+                                        bbox = (x_pixel, y_pixel, width_pixel, height_pixel)
 
-                                    prob = probs[0]
+                                        prob = probs[0]
 
-                                    cv2.rectangle(processed_frame, (bbox[0], bbox[1]), (bbox[0] + bbox[2], bbox[1] + bbox[3]), (0, 0, 255), 2)
-                                    text = f'{weapon}: {prob:.2f}'
+                                        cv2.rectangle(processed_frame, (bbox[0], bbox[1]), (bbox[0] + bbox[2], bbox[1] + bbox[3]), (0, 0, 255), 2)
+                                        text = f'{weapon}: {prob:.2f}'
 
-                                    cv2.putText(processed_frame, text, (bbox[0], bbox[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (249, 246, 246), 2)
+                                        cv2.putText(processed_frame, text, (bbox[0], bbox[1] - 10), cv2.FONT_HERSHEY_SIMPLEX, 1.1, (249, 246, 246), 2)
 
-                            weapon_image = cv2.imencode('.jpg', processed_frame)[1].tobytes()
+                                weapon_image = cv2.imencode('.jpg', processed_frame)[1].tobytes()
 
+                                random_text = generate_random_text(6)
+
+                                files = {'detect_image': (f'frame_{random_text}.jpg', weapon_image, 'image/jpeg')}
+
+                                data = {'camera': cam_id, 'detect_event': weapon}
+                                start_time_save = time.time()
+                                response = requests.post(detect_image_save, files=files, headers=headers, data=data)
+                        
+                                end_time_save = time.time()
+                        
+                                print("Total Time Taken For Save: ", end_time_save - start_time_save)
+                                print(f"Thread {thread_id} for Camera {cam_id}: Frame processed with Event detect.")
+
+                            if not bboxes_list:
+                                files = {'detect_image': (f'frame_{cam_id}.jpg', weapon_image, 'image/jpeg')}
+
+                                data = {'camera': cam_id, 'detect_event': 'No Event'}
+                                start_time_save = time.time()
+                                response = requests.post(detect_image_save, files=files, headers=headers, data=data)
+                                end_time_save = time.time()
+                        
+                                print("Total Time Taken For Save: ", end_time_save - start_time_save)
+
+                                print(f"Thread {thread_id} for Camera {cam_id}: Frame processed with NO Event detect.")
+                        
+                        else:
+                            processed_frame_d = cv2.putText(frame, f"Status: ML Server Not Working", (10, 70),
+                                                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+                            weapon_image = cv2.imencode('.jpg', processed_frame_d)[1].tobytes()
                             random_text = generate_random_text(6)
 
                             files = {'detect_image': (f'frame_{random_text}.jpg', weapon_image, 'image/jpeg')}
+                            print("random_text: ", random_text)
 
-                            data = {'camera': cam_id, 'detect_event': weapon}
-                            start_time_save = time.time()
+                            data = {'camera': cam_id, 'detect_event': 'Detection N/A'}
+                            print("Data:" , data)
                             response = requests.post(detect_image_save, files=files, headers=headers, data=data)
-                       
-                            end_time_save = time.time()
-                    
-                            print("Total Time Taken For Save: ", end_time_save - start_time_save)
-                            print(f"Thread {thread_id} for Camera {cam_id}: Frame processed with Event detect.")
-
-                        if not bboxes_list:
-                            files = {'detect_image': (f'frame_{cam_id}.jpg', weapon_image, 'image/jpeg')}
-
-                            data = {'camera': cam_id, 'detect_event': 'No Event'}
-                            start_time_save = time.time()
-                            response = requests.post(detect_image_save, files=files, headers=headers, data=data)
-                            end_time_save = time.time()
-                    
-                            print("Total Time Taken For Save: ", end_time_save - start_time_save)
-
-                            print(f"Thread {thread_id} for Camera {cam_id}: Frame processed with NO Event detect.")
-                    
-                    else:
-                        processed_frame_d = cv2.putText(frame, f"Status: ML Server Not Working", (10, 70),
-                                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
-                        weapon_image = cv2.imencode('.jpg', processed_frame_d)[1].tobytes()
-                        random_text = generate_random_text(6)
-
-                        files = {'detect_image': (f'frame_{random_text}.jpg', weapon_image, 'image/jpeg')}
-                        print("random_text: ", random_text)
-
-                        data = {'camera': cam_id, 'detect_event': 'Detection N/A'}
-                        print("Data:" , data)
-                        response = requests.post(detect_image_save, files=files, headers=headers, data=data)
-                        print("response:", response)
-                        print(f"Requested method is not allowed, please refer to API document for Camera {cam_id}")
+                            print("response:", response)
+                            print(f"Requested method is not allowed, please refer to API document for Camera {cam_id}")
+                            
+                    except requests.exceptions.RequestException as e:
+                        print(f"Request error for Gun API: {e}")
+                        # Optionally handle connection errors or log to a file
+                    except json.JSONDecodeError:
+                        print("Error decoding JSON response from Gun API.")
 
                     #.......gun end.......#
                 elif "violence" in name_lower:
-                    print(f"Calling violence API for subscription: {name}")
-                    random_text = generate_random_text(6)
-                    violence_image = cv2.imencode('.jpg', frame_cam)[1].tobytes()
-                    print('process frame')
-
-                    violence_url = ml_server + endpoint
-                    
-                    res = requests.post(violence_url, data=violence_image)
-                    print(f'process frame: {res.status_code}')
-                    detect = json.loads(res.content)
-                    print(f'process frame detect: {detect}')
-                    
-                    if res.status_code == 200:
+                    try:
                         
-                        files = {'detect_image': (f'frame_v_{random_text}.jpg', violence_image, 'image/jpeg')}
-                        print("if random_text: ", random_text)
-                        #  detect['label']
-                        data = {'camera': cam_id, 'detect_event': detect['label']}
-                        print("vio if Data:" , data)
-                        response = requests.post(detect_image_save, files=files, headers=headers, data=data)
-                        print("response:", response)
-                        #print(f"Requested method is not allowed, please refer to API document for Camera {cam_id}")
-                        print(f'detect value for violence: {detect}')
-                    else:
-                        print(f'process frame detect: {detect}')
-                        files = {'detect_image': (f'frame_{random_text}.jpg', violence_image, 'image/jpeg')}
-                        print("el random_text: ", random_text)
+                        print(f"Calling violence API for subscription: {name}")
+                        random_text = generate_random_text(6)
+                        violence_image = cv2.imencode('.jpg', frame_cam)[1].tobytes()
+                        print('process frame')
 
-                        data = {'camera': cam_id, 'detect_event': 'No Violence'}
-                        print("vio else Data:" , data)
-                        response = requests.post(detect_image_save, files=files, headers=headers, data=data)
-                        print("response:", response)
-                        #print(f"Requested method is not allowed, please refer to API document for Camera {cam_id}")
-                        print(f'detect value for no violence: {detect}')
+                        violence_url = ml_server + endpoint
+                        
+                        res = requests.post(violence_url, data=violence_image)
+                        print(f'process frame: {res.status_code}')
+                        detect = json.loads(res.content)
+                        print(f'process frame detect: {detect}')
+                        
+                        if res.status_code == 200:
+                            
+                            files = {'detect_image': (f'frame_v_{random_text}.jpg', violence_image, 'image/jpeg')}
+                            print("if random_text: ", random_text)
+                            #  detect['label']
+                            data = {'camera': cam_id, 'detect_event': detect['label']}
+                            print("vio if Data:" , data)
+                            response = requests.post(detect_image_save, files=files, headers=headers, data=data)
+                            print("response:", response)
+                            #print(f"Requested method is not allowed, please refer to API document for Camera {cam_id}")
+                            print(f'detect value for violence: {detect}')
+                        else:
+                            print(f'process frame detect: {detect}')
+                            files = {'detect_image': (f'frame_{random_text}.jpg', violence_image, 'image/jpeg')}
+                            print("el random_text: ", random_text)
+
+                            data = {'camera': cam_id, 'detect_event': 'No Violence'}
+                            print("vio else Data:" , data)
+                            response = requests.post(detect_image_save, files=files, headers=headers, data=data)
+                            print("response:", response)
+                            #print(f"Requested method is not allowed, please refer to API document for Camera {cam_id}")
+                            print(f'detect value for no violence: {detect}')
+                    except requests.exceptions.RequestException as e:
+                        print(f"Request error for Violence API: {e}")
+                    except json.JSONDecodeError:
+                        print("Error decoding JSON response from Violence API.")
                 
                 elif "fire" in name_lower:
-                    print(f"Calling Fire API for subscription: {name}")
-                    random_text = generate_random_text(6)
-                    fire_image = cv2.imencode('.jpg', frame_cam)[1].tobytes()
+                    try:
+                        print(f"Calling Fire API for subscription: {name}")
+                        random_text = generate_random_text(6)
+                        fire_image = cv2.imencode('.jpg', frame_cam)[1].tobytes()
 
-                    fire_url = ml_server + endpoint
-                    
-                    res = requests.post(fire_url, data=fire_image)
-                    detect = json.loads(res.content)
-                    
-                    if res.status_code == 200:
+                        fire_url = ml_server + endpoint
                         
+                        res = requests.post(fire_url, data=fire_image)
+                        detect = json.loads(res.content)
                         
-                        files = {'detect_image': (f'frame_{random_text}.jpg', fire_image, 'image/jpeg')}
-                        print("random_text: ", random_text)
+                        if res.status_code == 200:
+                            
+                            
+                            files = {'detect_image': (f'frame_{random_text}.jpg', fire_image, 'image/jpeg')}
+                            print("random_text: ", random_text)
 
-                        data = {'camera': cam_id, 'detect_event': detect}
-                        print("Data:" , data)
-                        response = requests.post(detect_image_save, files=files, headers=headers, data=data)
-                        print("response:", response)
-                        #print(f"Requested method is not allowed, please refer to API document for Camera {cam_id}")
-                        print(f'detect value for fire: {detect}')
-                    else:
-                        
-                        files = {'detect_image': (f'frame_{random_text}.jpg', fire_image, 'image/jpeg')}
-                        print("random_text: ", random_text)
+                            data = {'camera': cam_id, 'detect_event': detect}
+                            print("Data:" , data)
+                            response = requests.post(detect_image_save, files=files, headers=headers, data=data)
+                            print("response:", response)
+                            #print(f"Requested method is not allowed, please refer to API document for Camera {cam_id}")
+                            print(f'detect value for fire: {detect}')
+                        else:
+                            
+                            files = {'detect_image': (f'frame_{random_text}.jpg', fire_image, 'image/jpeg')}
+                            print("random_text: ", random_text)
 
-                        data = {'camera': cam_id, 'detect_event': 'No Fire'}
-                        print("Data:" , data)
-                        response = requests.post(detect_image_save, files=files, headers=headers, data=data)
-                        print("response:", response)
-                        #print(f"Requested method is not allowed, please refer to API document for Camera {cam_id}")
-                        print(f'detect value for no fire: {detect}')
+                            data = {'camera': cam_id, 'detect_event': 'No Fire'}
+                            print("Data:" , data)
+                            response = requests.post(detect_image_save, files=files, headers=headers, data=data)
+                            print("response:", response)
+                            #print(f"Requested method is not allowed, please refer to API document for Camera {cam_id}")
+                            print(f'detect value for no fire: {detect}')
+                    except requests.exceptions.RequestException as e:
+                        print(f"Request error for Fire API: {e}")
+                    except json.JSONDecodeError:
+                        print("Error decoding JSON response from Fire API.")
 
                 else:
                     print(f"service name not matching: {name}")
