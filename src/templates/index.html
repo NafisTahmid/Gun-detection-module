@@ -55,7 +55,7 @@
             <div id="button-cluster">
                 <button id="restart_server_button" onclick="handleRestartClick()">Restart Server</button>
                 <button id="change_server_button" onclick="showForm()">Change Video Server</button>
-                <button id="edit_camera_stats" style="background-color: #A52A2A">Edit camera stats</button>
+                <button id="edit_camera_stats" style="background-color: #A52A2A" onclick="fetchCameras()">Edit camera stats</button>
             </div>
             <form id="change_server_form" action="/" method="post" onsubmit="submitForm(event)">
                 <div class="input-group">
@@ -108,8 +108,34 @@
 
     <!-- Camera update section -->
      <div id="camera-update"></div>
-
-
 </body>
+
+<!-- Edit Camera Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeEditModal()">&times;</span>
+        <h2>Edit Camera</h2>
+        <form id="editCameraForm">
+            <input type="hidden" id="editCameraId">
+            <label for="editCameraUrl">Camera URL:</label>
+            <input type="text" id="editCameraUrl" required>
+            <label for="editCameraType">Camera Type:</label>
+            <input type="text" id="editCameraType" required>
+            <label for="editCameraStatus">Camera Status:</label>
+            <select id="editCameraStatus">
+                <option value="true">Active</option>
+                <option value="false">Inactive</option>
+            </select>
+            <label for="editThreshold">Threshold:</label>
+            <input type="number" id="editThreshold" required>
+            <label for="editThirdParty">Third Party:</label>
+            <select id="editThirdParty">
+                <option value="true">Yes</option>
+                <option value="false">No</option>
+            </select>
+            <button type="submit">Save Changes</button>
+        </form>
+    </div>
+</div>
 
 </html>

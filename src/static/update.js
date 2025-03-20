@@ -111,33 +111,96 @@ function handleError(message) {
     console.error(message);
 }
 
-async function updateCameras() {
-    const div = document.getElementById("camera-update");
-    let ul = document.createElement("ul");
+document.getElementById('loadBranchesBtn').addEventListener('click', fetchCommits);
+// New module
 
-    try {
-        const response = await fetch("././server_config.json", {
-            method: "GET"
-        })
-        const json_data = await response.json()
-        const cameras = json_data["cameras"];
-        let li = document.createElement("li");
 
-        cameras.forEach((camera, index) => {
-            console.log(camera);
-            li.innerHTML = `
-                ${camera.camera_url} <button>Update</button> <button>Delete</button>
-            `
-            ul.appendChild(li);
-        })
-        div.appendChild(ul);
-    } catch {
-        throw new Error("Cameras not found") 
+// Fetch all cameras and populate the table
+async function fetchCameras() {
+    const response = await fetch('/cameras');
+    const data = await response.json();
+    const tableBody = document.querySelector('#camera_table tbody');
+    tableBody.innerHTML = '';
+
+    data.cameras.forEach(camera => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${camera.camera_id}</td>
+            <td>${camera.camera_url}</td>
+            <td>${camera.camera_type}</td>
+            <td>${camera.camera_running_status ? 'Active' : 'Inactive'}</td>
+            <td>
+                <button onclick="openEditModal(${camera.camera_id})">Edit</button>
+                <button onclick="deleteCamera(${camera.camera_id})">Delete</button>
+            </td>
+        `;
+        tableBody.appendChild(row);
+    });
+}
+
+// Open the edit modal with camera details
+async function openEditModal(cameraId) {
+    const response = await fetch(`/cameras/${cameraId}`);
+    const camera = await response.json();
+
+    document.getElementById('editCameraId').value = camera.camera_id;
+    document.getElementById('editCameraUrl').value = camera.camera_url;
+    document.getElementById('editCameraType').value = camera.camera_type;
+    document.getElementById('editCameraStatus').value = camera.camera_running_status;
+    document.getElementById('editThreshold').value = camera.threshold;
+    document.getElementById('editThirdParty').value = camera.third_party;
+
+    document.getElementById('editModal').style.display = 'block';
+}
+
+// Close the edit modal
+function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+}
+
+// Handle form submission to update a camera
+document.getElementById('editCameraForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const cameraId = document.getElementById('editCameraId').value;
+    const updatedData = {
+        camera_url: document.getElementById('editCameraUrl').value,
+        camera_type: document.getElementById('editCameraType').value,
+        camera_running_status: document.getElementById('editCameraStatus').value === 'true',
+        threshold: parseFloat(document.getElementById('editThreshold').value),
+        third_party: document.getElementById('editThirdParty').value === 'true'
+    };
+
+    const response = await fetch(`/cameras/${cameraId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+    });
+
+    if (response.ok) {
+        closeEditModal();
+        fetchCameras(); // Refresh the table
+    } else {
+        alert('Failed to update camera.');
+    }
+});
+
+// Delete a camera
+async function deleteCamera(cameraId) {
+    if (confirm('Are you sure you want to delete this camera?')) {
+        const response = await fetch(`/cameras/${cameraId}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            fetchCameras(); // Refresh the table
+        } else {
+            alert('Failed to delete camera.');
+        }
     }
 }
 
-document.getElementById('loadBranchesBtn').addEventListener('click', fetchCommits);
-document.getElementById("edit_camera_stats").addEventListener('click', updateCameras);
-
+// Fetch cameras when the page loads
+document.addEventListener('DOMContentLoaded', fetchCameras);
 
 

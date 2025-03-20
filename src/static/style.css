@@ -1,379 +1,425 @@
 /* General Styles */
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f4f4f4;
-    color: #333;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    min-height: 100vh;
-    margin: 0;
+  font-family: Arial, sans-serif;
+  background-color: #f4f4f4;
+  color: #333;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
 }
 
 .container {
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    width: 45%; /* Adjust the percentage as needed */
-    max-width: 1000px; /* Optional: set a max width to prevent it from getting too large */
-    margin: 3% auto; /* Center the container */
-    box-sizing: border-box; 
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  width: 45%; /* Adjust the percentage as needed */
+  max-width: 1000px; /* Optional: set a max width to prevent it from getting too large */
+  margin: 3% auto; /* Center the container */
+  box-sizing: border-box;
 }
 
-
 .innerContainer {
-    padding: 20px;
-    text-align: center; /* Center inline text and inline-block elements */
-    margin: 0 auto; /* Center the innerContainer within the container */
-    max-width: 100%; /* Allow it to use full width of its parent */
-    box-sizing: border-box; /* Include padding in width calculation */
+  padding: 20px;
+  text-align: center; /* Center inline text and inline-block elements */
+  margin: 0 auto; /* Center the innerContainer within the container */
+  max-width: 100%; /* Allow it to use full width of its parent */
+  box-sizing: border-box; /* Include padding in width calculation */
 }
 
 h1 {
-    margin-bottom: 10px;
-    color: #172554;
+  margin-bottom: 10px;
+  color: #172554;
 }
 
 .section_ip {
-    margin-bottom: 20px;
+  margin-bottom: 20px;
 }
 
 .input-group {
-    margin-bottom: 15px;
+  margin-bottom: 15px;
 }
 
 .input-group label {
-    display: block;
-    margin-bottom: 5px;
-    font-weight: bold;
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
 }
 
 .input-group input {
-    width: 100%;
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
 }
 
 button {
-    padding: 10px 20px;
-    background-color: #172554;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+  padding: 10px 20px;
+  background-color: #172554;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 button:hover {
-    background-color: #172554;
+  background-color: #172554;
 }
 
 #change_server_warning {
-    background-color: #f8d7da;
-    color: #721c24;
-    border: 1px solid #f5c6cb;
-    padding: 15px;
-    border-radius: 5px;
-    margin-bottom: 20px;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
+  background-color: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+  padding: 15px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
 }
 
 #change_server_warning::before {
-    content: "\26A0"; /* Unicode for warning symbol */
-    font-size: 24px;
-    margin-right: 10px;
-    color: #721c24;
+  content: "\26A0"; /* Unicode for warning symbol */
+  font-size: 24px;
+  margin-right: 10px;
+  color: #721c24;
 }
 
 .video-server-status {
-    margin-top: 20px;
-    font-size: 1.2em;
-    color: #333;
-    text-align: center;
+  margin-top: 20px;
+  font-size: 1.2em;
+  color: #333;
+  text-align: center;
 }
 
 .video-server-status p {
-    display: inline-block;
-    background-color: #172554; /* Bright yellow background */
-    color: #fff; /* Black text color */
-    padding: 5px 10px;
-    font-weight: bold;
-    border-radius: 4px;
+  display: inline-block;
+  background-color: #172554; /* Bright yellow background */
+  color: #fff; /* Black text color */
+  padding: 5px 10px;
+  font-weight: bold;
+  border-radius: 4px;
 }
 
 .loading-overlay {
-    display: flex; /* Flexbox layout */
-    justify-content: center; /* Center horizontally */
-    align-items: center; /* Center vertically */
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7); /* Overlay background */
-    color: white;
-    font-size: 1.5em;
-    z-index: 1000;
-    opacity: 0;
-    transition: opacity 0.5s ease; /* Smooth fade-in/out */
-    pointer-events: none; /* Disable interactions when hidden */
+  display: flex; /* Flexbox layout */
+  justify-content: center; /* Center horizontally */
+  align-items: center; /* Center vertically */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7); /* Overlay background */
+  color: white;
+  font-size: 1.5em;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.5s ease; /* Smooth fade-in/out */
+  pointer-events: none; /* Disable interactions when hidden */
 }
 
 .loading-overlay.show {
-    opacity: 1; /* Fully visible */
-    pointer-events: auto; /* Enable interactions when shown */
+  opacity: 1; /* Fully visible */
+  pointer-events: auto; /* Enable interactions when shown */
 }
 
 .loading-content {
-    display: flex; /* Flexbox for content alignment */
-    flex-direction: column; /* Stack items vertically */
-    align-items: center; /* Center horizontally */
-    justify-content: center; /* Center vertically */
-    text-align: center;
+  display: flex; /* Flexbox for content alignment */
+  flex-direction: column; /* Stack items vertically */
+  align-items: center; /* Center horizontally */
+  justify-content: center; /* Center vertically */
+  text-align: center;
 }
 
 .loading-spinner {
-    border: 8px solid rgba(255, 255, 255, 0.3); /* Light translucent border */
-    border-top: 8px solid white; /* Solid white color for spinner effect */
-    border-radius: 50%;
-    width: 20px; /* Adjusted size */
-    height: 20px; /* Adjusted size */
-    animation: spin 1s linear infinite; /* Rotation animation */
+  border: 8px solid rgba(255, 255, 255, 0.3); /* Light translucent border */
+  border-top: 8px solid white; /* Solid white color for spinner effect */
+  border-radius: 50%;
+  width: 20px; /* Adjusted size */
+  height: 20px; /* Adjusted size */
+  animation: spin 1s linear infinite; /* Rotation animation */
 }
 
 @keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }
-
-
 
 /* Toast Notifications */
 .toast {
-    background-color: brown;
-    color: white;
-    padding: 15px 25px;
-    border-radius: 5px;
-    margin-bottom: 10px;
-    opacity: 0;
-    transition: opacity 0.5s ease, transform 0.5s ease;
-    transform: translateY(-20px);
-    max-width: 50vw; /* Adjust the width as needed */
-    word-wrap: break-word; /* Break text onto the next line if it's too long */
-    text-align: center; /* Center align text */
+  background-color: brown;
+  color: white;
+  padding: 15px 25px;
+  border-radius: 5px;
+  margin-bottom: 10px;
+  opacity: 0;
+  transition: opacity 0.5s ease, transform 0.5s ease;
+  transform: translateY(-20px);
+  max-width: 50vw; /* Adjust the width as needed */
+  word-wrap: break-word; /* Break text onto the next line if it's too long */
+  text-align: center; /* Center align text */
 }
 
 .toast.show {
-    opacity: 1;
-    transform: translateY(0);
+  opacity: 1;
+  transform: translateY(0);
 }
 
 #toast-container {
-    position: fixed;
-    top: 20px; /* Distance from the top of the viewport */
-    left: 50%; /* Center horizontally */
-    transform: translateX(-50%); /* Center horizontally */
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    align-items: center; /* Center items horizontally within the container */
-    gap: 10px; /* Space between toasts */
+  position: fixed;
+  top: 20px; /* Distance from the top of the viewport */
+  left: 50%; /* Center horizontally */
+  transform: translateX(-50%); /* Center horizontally */
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center; /* Center items horizontally within the container */
+  gap: 10px; /* Space between toasts */
 }
-
 
 /* Header */
 header {
-    background-color: #172554;
-    display: flex;
-    align-items: center;
-    padding: 10px;
+  background-color: #172554;
+  display: flex;
+  align-items: center;
+  padding: 10px;
 }
 
 header img {
-    height: 50px;
-    margin-right: 20px;
+  height: 50px;
+  margin-right: 20px;
 }
 
 header a {
-    color: white;
-    font-size: 24px;
-    font-weight: bold;
-    text-decoration: none;
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  text-decoration: none;
 }
 
 /* Form */
 form {
-    display: none;
+  display: none;
 }
 
 form #video_server_id {
-    max-width: 450px;
+  max-width: 450px;
 }
 
 form button {
-    background-color: #172554;
+  background-color: #172554;
 }
 
 #restart_server_button {
-    background-color: brown;
+  background-color: brown;
 }
 
 form #cancel_change_server_button {
-    background-color: brown;
+  background-color: brown;
 }
 
 .capitalize {
-    text-transform: uppercase;
+  text-transform: uppercase;
 }
 /* Section Styles */
 .section {
-    position: relative;
-    margin-top: 50px;
+  position: relative;
+  margin-top: 50px;
 }
 
 .tag-container {
-    position: absolute;
-    top: -34px; /* Adjust this value as needed */
-    left: 0;
-    background-color: #172554;
-    color: azure;
-    padding: 4px 4px;
-    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
-    border-radius: 4px 4px 0 0;
-    font-size: 1.2em;
-    font-weight: bold;
+  position: absolute;
+  top: -34px; /* Adjust this value as needed */
+  left: 0;
+  background-color: #172554;
+  color: azure;
+  padding: 4px 4px;
+  font-family: Cambria, Cochin, Georgia, Times, "Times New Roman", serif;
+  border-radius: 4px 4px 0 0;
+  font-size: 1.2em;
+  font-weight: bold;
 }
 
 .tag-container h4 {
-    margin: 2px;
+  margin: 2px;
 }
 
 .section table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 20px 0 0; /* Adjust the top margin to create space for the tag */
+  width: 100%;
+  border-collapse: collapse;
+  margin: 20px 0 0; /* Adjust the top margin to create space for the tag */
 }
 
-.section th, .section td {
-    border: 1px solid #ddd;
-    padding: 8px;
-    font-family: Cambria, Cochin, Georgia, Times, 'Times New Roman', serif;
+.section th,
+.section td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  font-family: Cambria, Cochin, Georgia, Times, "Times New Roman", serif;
 }
 
 .section th {
-    background-color: #172554;
-    color: azure;
+  background-color: #172554;
+  color: azure;
 }
-
-
 
 /* GitHub Updates Section */
 .github-updates-container {
-    margin-top: 20px;
-    padding: 15px;
-    background-color: #e7efff; /* Light blue background for updates */
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    font-family: Arial, sans-serif;
-    color: #333;
+  margin-top: 20px;
+  padding: 15px;
+  background-color: #e7efff; /* Light blue background for updates */
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  font-family: Arial, sans-serif;
+  color: #333;
 }
 
 .github-update {
-    background-color: #fff;
-    padding: 12px;
-    margin-bottom: 10px;
-    border-radius: 8px;
-    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.05);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  background-color: #fff;
+  padding: 12px;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  box-shadow: 0 2px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .github-update:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  transform: translateY(-5px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .github-update h5 {
-    font-size: 1.1em;
-    color: #172554; /* Dark blue color */
+  font-size: 1.1em;
+  color: #172554; /* Dark blue color */
 }
 
 .github-update a {
-    text-decoration: none;
-    color: #172554;
-    font-weight: bold;
-    transition: color 0.3s ease;
+  text-decoration: none;
+  color: #172554;
+  font-weight: bold;
+  transition: color 0.3s ease;
 }
 
 .github-update a:hover {
-    color: #4c6ef5; /* Lighter blue on hover */
+  color: #4c6ef5; /* Lighter blue on hover */
 }
 
 .github-update .branch-info {
-    font-size: 0.9em;
-    color: #555;
-    margin-top: 5px;
+  font-size: 0.9em;
+  color: #555;
+  margin-top: 5px;
 }
 
 .github-update:last-child {
-    margin-bottom: 0;
+  margin-bottom: 0;
 }
-
 
 /* Target specific button */
 #loadBranchesBtn {
-    padding: 10px 20px;
-    background-color: #172554;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+  padding: 10px 20px;
+  background-color: #172554;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
 }
 
 /* Prevent hover effect on the loading button */
 #loadBranchesBtn:hover {
-    background-color: #172554;
+  background-color: #172554;
 }
 
 /* Center the button */
 .button-container {
-    text-align: center;
-    margin-top: 20px; /* Optional: Add spacing above the button */
+  text-align: center;
+  margin-top: 20px; /* Optional: Add spacing above the button */
 }
 
 /* Spinner styles specifically for the loading state of the button */
 #loadBranchesBtn.loading {
-    position: relative;
-    pointer-events: none;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+  position: relative;
+  pointer-events: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 /* Spinner animation inside the button */
 #loadBranchesBtn.loading::after {
-    content: "";
-    width: 16px;
-    height: 16px;
-    border: 2px solid #fff;
-    border-top-color: transparent;
-    border-radius: 50%;
-    margin-left: 8px; /* Space between text and spinner */
-    animation: spin 0.6s linear infinite;
+  content: "";
+  width: 16px;
+  height: 16px;
+  border: 2px solid #fff;
+  border-top-color: transparent;
+  border-radius: 50%;
+  margin-left: 8px; /* Space between text and spinner */
+  animation: spin 0.6s linear infinite;
+}
+
+/* New module */
+/* Modal Styles */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+  background-color: #fff;
+  margin: 10% auto;
+  padding: 20px;
+  border: 1px solid #888;
+  width: 50%;
+}
+
+.close {
+  color: #aaa;
+  float: right;
+  font-size: 28px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close:hover {
+  color: #000;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+th {
+  background-color: #f2f2f2;
+}
+.actions {
+  display: flex;
+  gap: 5px;
 }
 
 /* Spinner animation */
 @keyframes spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
 }

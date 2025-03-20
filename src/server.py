@@ -24,6 +24,7 @@ from signal_handler import SignalHandler
 import subprocess
 import re
 from dotenv import load_dotenv, set_key
+import aiosqlite
 
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
@@ -55,7 +56,7 @@ signal_handler = SignalHandler()
 
 # AIOHTTP SERVER CONFIG
 HOST = "0.0.0.0"
-PORT = 8080
+PORT = 8081
 
 USERNAME = "admin"
 PASSWORD = "password"
@@ -830,6 +831,57 @@ async def on_shutdown(app):
     for camera_id in camera_processes:
         camera_processes[camera_id] = False
 
+"""New module starts from here"""
+
+# Path to JSON file
+JSON_FILE = "D://Nafis//gun-detection-module//src//server.json"
+
+# Helper function to read the JSON file
+async def read_json():
+    if os.path.exists(JSON_FILE):
+        with open(JSON_FILE, 'r') as file:
+            return json.load(file)
+    return {"cameras": []}
+
+# Helper function to write to the JSON file
+async def write_json(data):
+    with open(JSON_FILE, 'w') as file:
+        json.dump(data, file, indent=4)
+
+# Fetch all cameras
+async def get_cameras(request):
+    data = await read_json()
+    return web.json_response(data)
+
+# Add a new camera
+async def create_camera(request):
+    new_camera = await request.json()
+    data = await read_json()
+    data["cameras"].append(new_camera)
+    await write_json(data)
+    return web.json_response(new_camera, status=201)
+
+# Update an existing camera
+async def update_camera(request):
+    camera_id = int(request.match_info['camera_id'])
+    updated_data = await request.json()
+    data = await read_json()
+    for camera in data["cameras"]:
+        if camera["camera_id"] == camera_id:
+            camera.update(updated_data)
+            await write_json(data)
+            return web.json_response(camera)
+    return web.json_response({"error": "Camera not found"}, status=404)
+
+# Delete a camera
+async def delete_camera(request):
+    camera_id = int(request.match_info['camera_id'])
+    data = await read_json()
+    data["cameras"] = [camera for camera in data["cameras"] if camera["camera_id"] != camera_id]
+    await write_json(data)
+    return web.json_response({"message": "Camera deleted"})
+    
+
 
 async def init_app(loop):
     # Create an aiohttp app and set up routes
@@ -838,7 +890,6 @@ async def init_app(loop):
         app, loader=jinja2.FileSystemLoader(os.path.join(pwd, 'templates'))
     )
     app.router.add_get('/', index)
-    
     app.router.add_post('/', index)
     app.router.add_static('/static', static_path)
     app.router.add_post('/restart_server', restart_server)
@@ -847,10 +898,14 @@ async def init_app(loop):
     app.router.add_get('/check_server', check_server)
     app.router.add_get('/server_config', server_config)
 
+    # CRUD routes for cameras
+    app.router.add_get('/cameras', get_cameras)
+    app.router.add_post('/cameras', create_camera)
+    app.router.add_put('/cameras/{camera_id}', update_camera)
+    app.router.add_delete('/cameras/{camera_id}', delete_camera)
+
     app.cleanup_ctx.append(websocket_manager)
-
     return app
-
 
 def shutdown(signal_received, frame):
     """Handle shutdown signals."""
