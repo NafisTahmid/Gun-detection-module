@@ -117,12 +117,14 @@ document.getElementById('loadBranchesBtn').addEventListener('click', fetchCommit
 
 // Fetch all cameras and populate the table
 async function fetchCameras() {
-    const response = await fetch('/cameras');
+    const response = await fetch('/cameras', {
+        method: "GET"
+    });
     const data = await response.json();
     const tableBody = document.querySelector('#camera_table tbody');
     tableBody.innerHTML = '';
 
-    data.cameras.forEach(camera => {
+    data.forEach(camera => {
         const row = document.createElement('tr');
         row.innerHTML = `
             <td>${camera.camera_id}</td>
@@ -201,6 +203,6 @@ async function deleteCamera(cameraId) {
 }
 
 // Fetch cameras when the page loads
-document.addEventListener('DOMContentLoaded', fetchCameras);
+// document.addEventListener('DOMContentLoaded', fetchCameras);
 
 

@@ -851,7 +851,8 @@ async def write_json(data):
 # Fetch all cameras
 async def get_cameras(request):
     data = await read_json()
-    return web.json_response(data)
+    cameras = data["cameras"]
+    return web.json_response(cameras)
 
 # Add a new camera
 async def create_camera(request):
