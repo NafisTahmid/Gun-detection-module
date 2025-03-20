@@ -1,4 +1,23 @@
-import cv2
+import os
+import sys
+import importlib.util
+if getattr(sys, 'frozen', False):
+    # When running from a bundled executable
+    bundle_dir = sys._MEIPASS
+    cv2_path = os.path.join(bundle_dir, "cv2")
+    spec = importlib.util.spec_from_file_location("cv2", os.path.join(cv2_path, "cv2.cpython-36m-aarch64-linux-gnu.so"))
+    cv2 = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cv2)
+    print('is frozen in helper: ',cv2)
+    # Check if OpenCV was built with CUDA support
+    if cv2.getBuildInformation().find('CUDA') != -1:
+        print("OpenCV is built with CUDA support.")
+    else:
+        print("OpenCV is NOT built with CUDA support.")
+
+else:
+    import cv2
+# import cv2
 import asyncio
 import base64
 import json
@@ -21,8 +40,10 @@ import subprocess
 from dotenv import load_dotenv, set_key
 load_dotenv()
 
+user_home = os.getenv("HOME_URL", "/home/root")
+app_directory = os.path.join(user_home, 'acceleye-detection-app')
 pwd = os.path.dirname(os.path.abspath(__file__))
-config_location = os.path.join(pwd, "server_config.json")
+config_location = os.path.join(app_directory, "server_config.json")
 
 base_uri = os.getenv("URI","https://api.accelx.net/gd_apidev/")
 cam_check_url_save = base_uri + "camera/checkcam-url-images/"

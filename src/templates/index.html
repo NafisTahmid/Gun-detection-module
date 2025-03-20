@@ -9,6 +9,7 @@
     <script src="/static/main.js" defer></script>
     <script src="/static/utils.js" defer></script>
     <script src="/static/camera.js" defer></script>
+    <script src="/static/update.js" defer></script>
 </head>
 
 <body>
@@ -50,11 +51,9 @@
                 <p>{{ video_server_status }}</p>
             </div>
             {% endif %}
-            <!-- <div id="change_server_warning" class="warning">
-                <p>Warning: Changing the video server ID will result in the permanent loss of all data. Please consult with the administrator before proceeding with any modifications.</p>
-            </div> -->
+
             <div id="button-cluster">
-                <button id="restart_server_button" onclick="handleRestartClick()">Restart</button>
+                <button id="restart_server_button" onclick="handleRestartClick()">Restarttt</button>
                 <button id="change_server_button" onclick="showForm()">Change Video Server</button>
             </div>
             <form id="change_server_form" action="/" method="post" onsubmit="submitForm(event)">
@@ -68,15 +67,45 @@
         </div>
     </div>
 
+    <!-- Updates Section (Separate Container) -->
+    <div class="container">
+        <div class="innerContainer">
+            <div class="section">
+                <h4>Version Control</h4>
+                <div class="button-container">
+                    <button id="loadBranchesBtn">Check For Updates ... </button>
+                </div>
+                <table id="branchTable" style="display: none;">
+                    <thead>
+                        <tr>
+                            <th>Server Type</th>
+                            <th>Version</th>
+                            <th>Created At</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="branchTableBody"></tbody>
+                </table>
+                <p id="errorMessage"></p>
+                <p id="install_status"></p>
+            </div>
+        </div>
+    </div>
+
+
+
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
     <!-- Loading Section -->
     <div id="loading_overlay" class="loading-overlay">
         <div class="loading-content">
-            Restarting... Please wait.
+            <div class="loading-spinner"></div>
+            <p id="loading_message">Restarting... Please wait.</p>
         </div>
     </div>
+
+
 </body>
 
 </html>

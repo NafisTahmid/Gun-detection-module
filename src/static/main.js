@@ -17,6 +17,92 @@ function hideForm() {
     }
 }
 
+async function install(branch, version) {
+    const loadingOverlay = document.getElementById('loading_overlay');
+    loadingOverlay.style.display = 'flex'; // Show loading overlay
+    loadingOverlay.style.opacity = '1'; // Make it fully visible
+
+    try {
+        // Perform POST request to install the selected branch
+        const response = await fetch('/install_update', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',  // This header is essential
+            },
+            body: JSON.stringify({
+                branch: branch,
+                version: version
+            })
+        });
+
+        // Parse the response data
+        const data = await response.json();
+        console.log(data);
+
+        // Handle successful response
+        if (data.success) {
+            // Update UI or display success message
+            document.getElementById('install_status').innerText = `Successfully installed ${branch} branch.`;
+            document.getElementById('install_status').style.color = "green";
+            document.getElementById('install_status').style.fontWeight = 'bold';
+        } else {
+            document.getElementById('loading_message').innerText = `Installing... Please Wait`;
+            document.getElementById('install_status').innerText = `Processing installation of ${branch} branch.`;
+            document.getElementById('install_status').style.color = "blue";
+            document.getElementById('install_status').style.fontWeight = 'bold';
+        }
+
+
+
+
+
+    } catch (error) {
+        console.error('Error installing branch:', error);
+        document.getElementById('install_status').innerText = `Error installing ${branch} branch.`;
+        document.getElementById('install_status').style.color = "red";
+        document.getElementById('install_status').style.fontWeight = 'bold';
+        setTimeout(() => {
+            loadingOverlay.style.display = 'none';
+            loadingOverlay.style.opacity = '0';
+        }, 1000);
+    } finally {
+        document.getElementById('loading_message').innerText = `Processing... Please Wait`;
+        setTimeout(() => {
+            const checkServerStatus = async () => {
+                try {
+                    const statusResponse = await fetch('/check_server', {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    return statusResponse.message !== "No Server Running" && statusResponse.status !== 500;
+                } catch {
+                    return false; // Server is still down
+                }
+            };
+
+            const waitForServer = async () => {
+                document.getElementById('loading_message').innerText = `Restarting... Please Wait`;
+                let serverOnline = false;
+                while (!serverOnline) {
+                    serverOnline = await checkServerStatus();
+                    if (!serverOnline) {
+                        await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds before retry
+                    }
+                }
+                window.location.reload(true);
+            };
+
+            waitForServer();
+        },
+
+
+            1000)
+
+    }
+}
+
+
+
 async function submitForm(event) {
     event.preventDefault();
     const videoServerId = document.getElementById('video_server_id').value;

@@ -27,6 +27,8 @@ echo "Dependencies are up to date.... Continuing Installation"
 sudo nvpmodel -m 0 || { echo "Failed to set nvpmodel. Exiting..."; exit 1; }
 sudo jetson_clocks || { echo "Failed to set jetson_clocks. Exiting..."; exit 1; }
 
+export OPENBLAS_CORETYPE=ARMV8
+
 # Creating Service 
 
 # Check if the video_process service is already running

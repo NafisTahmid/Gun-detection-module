@@ -104,35 +104,56 @@ button:hover {
     border-radius: 4px;
 }
 
-/* Loading Overlay */
 .loading-overlay {
-    display: none; /* Hidden by default */
+    display: flex; /* Flexbox layout */
+    justify-content: center; /* Center horizontally */
+    align-items: center; /* Center vertically */
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7); /* Darker overlay for better contrast */
+    background-color: rgba(0, 0, 0, 0.7); /* Overlay background */
     color: white;
-    text-align: center;
-    font-size: 1.5em; /* Adjusted font size for better readability */
-    line-height: 100vh;
+    font-size: 1.5em;
     z-index: 1000;
     opacity: 0;
-    transition: opacity 0.5s ease; /* Smooth transition for appearance */
+    transition: opacity 0.5s ease; /* Smooth fade-in/out */
+    pointer-events: none; /* Disable interactions when hidden */
 }
 
 .loading-overlay.show {
-    display: flex; /* Changed to flex for vertical centering */
     opacity: 1; /* Fully visible */
+    pointer-events: auto; /* Enable interactions when shown */
 }
 
 .loading-content {
-    margin: auto;
-    padding: 20px;
-    background-color: rgba(0, 0, 0, 0.8); /* Slightly darker background for content */
-    border-radius: 8px; /* Rounded corners for better look */
+    display: flex; /* Flexbox for content alignment */
+    flex-direction: column; /* Stack items vertically */
+    align-items: center; /* Center horizontally */
+    justify-content: center; /* Center vertically */
+    text-align: center;
 }
+
+.loading-spinner {
+    border: 8px solid rgba(255, 255, 255, 0.3); /* Light translucent border */
+    border-top: 8px solid white; /* Solid white color for spinner effect */
+    border-radius: 50%;
+    width: 20px; /* Adjusted size */
+    height: 20px; /* Adjusted size */
+    animation: spin 1s linear infinite; /* Rotation animation */
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+
 
 /* Toast Notifications */
 .toast {
@@ -249,4 +270,110 @@ form #cancel_change_server_button {
 .section th {
     background-color: #172554;
     color: azure;
+}
+
+
+
+/* GitHub Updates Section */
+.github-updates-container {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #e7efff; /* Light blue background for updates */
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    font-family: Arial, sans-serif;
+    color: #333;
+}
+
+.github-update {
+    background-color: #fff;
+    padding: 12px;
+    margin-bottom: 10px;
+    border-radius: 8px;
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.github-update:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.github-update h5 {
+    font-size: 1.1em;
+    color: #172554; /* Dark blue color */
+}
+
+.github-update a {
+    text-decoration: none;
+    color: #172554;
+    font-weight: bold;
+    transition: color 0.3s ease;
+}
+
+.github-update a:hover {
+    color: #4c6ef5; /* Lighter blue on hover */
+}
+
+.github-update .branch-info {
+    font-size: 0.9em;
+    color: #555;
+    margin-top: 5px;
+}
+
+.github-update:last-child {
+    margin-bottom: 0;
+}
+
+
+/* Target specific button */
+#loadBranchesBtn {
+    padding: 10px 20px;
+    background-color: #172554;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Prevent hover effect on the loading button */
+#loadBranchesBtn:hover {
+    background-color: #172554;
+}
+
+/* Center the button */
+.button-container {
+    text-align: center;
+    margin-top: 20px; /* Optional: Add spacing above the button */
+}
+
+/* Spinner styles specifically for the loading state of the button */
+#loadBranchesBtn.loading {
+    position: relative;
+    pointer-events: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Spinner animation inside the button */
+#loadBranchesBtn.loading::after {
+    content: "";
+    width: 16px;
+    height: 16px;
+    border: 2px solid #fff;
+    border-top-color: transparent;
+    border-radius: 50%;
+    margin-left: 8px; /* Space between text and spinner */
+    animation: spin 0.6s linear infinite;
+}
+
+/* Spinner animation */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
 }

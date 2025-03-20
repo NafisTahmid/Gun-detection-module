@@ -38,7 +38,7 @@ install_cuda_dependencies() {
 }
 
 # Check CUDA installation using nvcc
-cuda_version=$(nvcc --version 2>/dev/null | grep -oP '(?<=release\s)\d+\.\d+' || echo "not installed")
+cuda_version=$(grep '#define CUDA_VERSION' /usr/local/cuda/include/cuda.h | awk '{print $3}' || echo "not installed")
 
 # Ensure cuda_version is not "not installed"
 if [ "$cuda_version" != "not installed" ]; then

@@ -1,17 +1,17 @@
-import cv2
+import os
+import sys
+import importlib.util
 import asyncio
 import base64
 import json
 import numpy as np
 import websockets
 import signal
-import sys
 import time
 import requests
 import threading
 import queue as thread_queue
 import struct
-import os
 import helper
 from datetime import datetime
 
@@ -19,11 +19,36 @@ import aiohttp
 from aiohttp import web
 import aiohttp_jinja2
 import jinja2
-
+# import cv2
 from signal_handler import SignalHandler
 import subprocess
 import re
 from dotenv import load_dotenv, set_key
+
+os.environ['QT_QPA_PLATFORM'] = 'offscreen'
+
+if getattr(sys, 'frozen', False):
+    # When running from a bundled executable
+    bundle_dir = sys._MEIPASS
+    cv2_path = os.path.join(bundle_dir, "cv2")
+    spec = importlib.util.spec_from_file_location("cv2", os.path.join(cv2_path, "cv2.cpython-36m-aarch64-linux-gnu.so"))
+    cv2 = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(cv2)
+    print('is frozen: ',cv2)
+    base_dir = sys._MEIPASS
+    # Check if OpenCV was built with CUDA support
+    if cv2.getBuildInformation().find('CUDA') != -1:
+        print("OpenCV is built with CUDA support.")
+    else:
+        print("OpenCV is NOT built with CUDA support.")
+
+else:
+    import cv2
+    print('is worked cv2')
+
+print("OpenCV Version:", cv2.__version__)
+
+base_dir = os.path.dirname(os.path.abspath(__file__))
 load_dotenv()
 
 signal_handler = SignalHandler()
@@ -31,6 +56,9 @@ signal_handler = SignalHandler()
 # AIOHTTP SERVER CONFIG
 HOST = "0.0.0.0"
 PORT = 80
+
+USERNAME = "admin"
+PASSWORD = "password"
 
 fixed_vs_server = os.getenv("SERVER_ID", "acceleye-005a")
 secret_key = os.getenv("SECRET_KEY")
@@ -40,24 +68,28 @@ ws_fixed_url = socket_uri + "ws/fixed-server/" + fixed_vs_server + "/"
 cam_check_url_save = base_uri + "camera/checkcam-url-images/"
 
 pwd = os.path.dirname(os.path.abspath(__file__))
-config_location = os.path.join(pwd, "server_config.json")
+user_home = os.getenv("HOME_URL", "/home/root")
+app_directory = os.path.join(user_home, 'acceleye-detection-app')
+app_version = os.getenv("VERSION", "V 1.00")
+env_location = os.path.join(app_directory, ".env")
+load_dotenv(env_location)
+config_location = os.path.join(app_directory, "server_config.json")
 static_path = os.path.join(pwd, 'static')
-env_location = os.path.join(pwd, ".env")
+
 # Configuration Constants
 frame_no_change_interval = 20
 MAX_QUEUE_SIZE = 10
 RECONNECT_INTERVAL = 5
-capture_interval_seconds = 1
+capture_interval_seconds = 2
 CHUNK_SIZE = 512 * 1024  # 512 KB
 ws_url = None
-
 # Global Variables
 camera_processes = {}
 ws_flag = False
 ws = None
 ws_fixed = None
 video_server_id = None
-
+set_ip = True 
 ws_task = None
 
 def get_ip_addresses(interface):
@@ -159,8 +191,8 @@ class Frame:
 def capture_frame(camera_id, cam_type, camera_url, abs_diff_threshold, capture_queue):
     """Thread to capture frames from the camera."""
     latency = 100
-    width = 1080
-    height = 720
+    width = 640
+    height = 480
 
     try:
         if cam_type == 'jpeg':
@@ -189,24 +221,37 @@ def capture_frame(camera_id, cam_type, camera_url, abs_diff_threshold, capture_q
             gst_str = (
                 'rtspsrc async-handling=true location={} latency={} retry=5 ! '
                 'rtph264depay ! h264parse ! '
-                'queue max-size-buffers=100 leaky=2 ! '
+                'queue max-size-buffers=5 leaky=2 ! '
                 'nvv4l2decoder enable-max-performance=1 ! '
                 'video/x-raw(memory:NVMM), format=(string)NV12 ! '
                 'nvvidconv ! video/x-raw, width={}, height={}, format=(string)BGRx ! '
-                'videorate ! video/x-raw, framerate=(fraction)1/{} ! '
-                'videoconvert ! '
+                'videoconvert ! video/x-raw, format=(string)BGR ! '
                 'appsink'
             ).format(camera_url, latency, width, height, capture_interval_seconds)
+            #'videorate ! video/x-raw, framerate=(fraction){}/1 ! '
 
             cap = cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
+        
 
-            if not cap.isOpened():
-                print(f"Failed to open RTSP stream for camera {camera_id}")
-                no_signal_msg = {'detect_event': 'No Signal'}
-                capture_queue.put(no_signal_msg)
-                return
+            # if not cap.isOpened():
+            #     print(f"Failed to open RTSP stream for camera {camera_id}")
+            #     no_signal_msg = {'detect_event': 'No Signal'}
+            #     capture_queue.put(no_signal_msg)
+            #     return
 
             while camera_processes.get(camera_id, False):
+
+                #print('in while loop')
+                if not cap.isOpened():
+                    print(f"Failed to open RTSP stream for camera {camera_id}")
+                    no_signal_msg = {'detect_event': 'No Signal'}
+                    capture_queue.put(no_signal_msg)
+                    cap.release()
+                    time.sleep(5)
+                    cap = cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
+                    continue
+                    
+                #print('cap opend')
                 ret, frame = cap.read()
                 if not ret:
                     print(f"Failed to grab frame from camera {camera_id}, retrying...")
@@ -219,11 +264,13 @@ def capture_frame(camera_id, cam_type, camera_url, abs_diff_threshold, capture_q
                     cap = cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
                     continue
 
+                time.sleep(1)
                 absdiff_check = Frame.get_instance()
                 accurate = absdiff_check.compare_frame(cam_id=camera_id, target_frame=frame, threshold=abs_diff_threshold)
 
                 if accurate:
-                    frame_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 95])[1].tobytes()
+                    #frame_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 95])[1].tobytes()
+                    frame_data = cv2.imencode('.jpg', frame)[1].tobytes()
                     frame = {'detect_event': 'Signal','frame':frame_data}
                     capture_queue.put(frame)
                     print(f"Frame for camera {camera_id} added to queue.")
@@ -245,7 +292,10 @@ async def send_frame_over_websocket(combined_message):
             print(f"WebSocket connection closed during send: {e}")
             ws_flag = False
     else:
+        
         print("WebSocket is not connected.")
+        await helper.restart_service()
+        
 
 
 async def send_frame_over_no_signal_websocket(combined_message):
@@ -259,7 +309,10 @@ async def send_frame_over_no_signal_websocket(combined_message):
             print(f"WebSocket connection closed during send: {e}")
             ws_flag = False
     else:
+        
         print("WebSocket is not connected.")
+        await helper.restart_service()
+        await asyncio.sleep(1)
 
 def send_frames(camera_id, capture_queue, loop):
     """Thread to send frames over WebSocket."""
@@ -276,6 +329,7 @@ def send_frames(camera_id, capture_queue, loop):
                 future.result()  # Wait for send to complete or raise an exception
 
                 time.sleep(0.1)
+                #await asyncio.sleep(0.1)
             
             else:
                 camera_id_bytes = f"{camera_id}|".encode('utf-8')
@@ -292,6 +346,7 @@ def send_frames(camera_id, capture_queue, loop):
             ws_flag = False
             time.sleep(RECONNECT_INTERVAL)
             # Reconnect logic is handled by the main loop
+            #await helper.restart_service()
         except Exception as e:
             print(f"Error while sending frame for camera {camera_id}: {e}")
             time.sleep(2)
@@ -334,7 +389,7 @@ async def connect_ws_fixed(loop):
                 print(f"Received message on fixed WebSocket: {data}")
                 
                 # Check for secret_key in the received data
-                if 'server_skey' in data:
+                if 'server_skey' in data and 'server_new_id' in data:
                     server_skey = data.get('server_skey')
                     video_server_id = data.get('server_new_id')
                     print(f"Received secret_key: {server_skey}. Now connecting to the main WebSocket...")
@@ -346,10 +401,12 @@ async def connect_ws_fixed(loop):
                     await reconnect_websocket(loop)
                     await websocket_listener(loop)
                 else:
-                    await asyncio.sleep(10)
+                    print(f"connecting after 1s")
+                    await asyncio.sleep(1)
         except websockets.ConnectionClosed as e:
             print(f"Fixed WebSocket connection closed: {e}. Reconnecting...")
             await asyncio.sleep(RECONNECT_INTERVAL)
+            #await helper.restart_service()
         except Exception as e:
             print(f"Error in fixed WebSocket: {e}")
             await asyncio.sleep(1)
@@ -372,17 +429,24 @@ async def reconnect_websocket(loop):
 
 async def websocket_listener(loop):
     """Asynchronous listener for WebSocket messages."""
-    global ws, ws_flag,video_server_id, signal_handler, server_running_status
+    global ws, ws_flag,video_server_id, signal_handler, server_running_status, set_ip
     first_time_call = True
+
     while signal_handler.can_run():
         try:
             server_running_status = f"Server Is Running: {video_server_id}"
-            message_to_send = {"message": f"message from {video_server_id} server", "status_code": 2000, "video_process_server_id": video_server_id, "ip_address": ip_address}     
-            await ws.send(json.dumps(message_to_send))
+            # message_to_send = {"message": f"message from {video_server_id} server", "status_code": 2000, "video_process_server_id": video_server_id, "ip_address": ip_address}     
+            # await ws.send(json.dumps(message_to_send))
 
             if ws_flag:
                 server_running_status = f"Server Is Running: {video_server_id}"
+                if set_ip:
+                    message_to_send = {"message": f"message from {video_server_id} server", "status_code": 2000, "video_process_server_id": video_server_id, "ip_address": ip_address}     
+                    await ws.send(json.dumps(message_to_send))
+                    #print('message_to_send -- {message_to_send}')
+                    set_ip = False
                 if os.path.exists(config_location) and first_time_call:
+                    
                     with open(config_location, 'r') as json_file:
                         cam_data = json.load(json_file)
                     cameras = cam_data.get('cameras', [])
@@ -422,6 +486,7 @@ async def websocket_listener(loop):
 
                     
                     first_time_call = False
+                    
                 
                 message = await ws.recv()
                 server_running_status = f"Server Is Running: {video_server_id}"
@@ -487,10 +552,18 @@ async def websocket_listener(loop):
                 elif 'server_restart_trigger' in data:
                     print('restarting server')
                     await helper.restart_service()
+                
+                elif 'status_code' in data and data['status_code'] == 4000:
+                    print('restarting server')
+                    await asyncio.sleep(5)
+                    ws_flag = False
+                    await connect_ws_fixed(loop)
+
         except websockets.ConnectionClosed as e:
             print(f"WebSocket connection closed: {e}. Reconnecting...")
             ws_flag = False
-            await reconnect_websocket(loop)
+            await helper.restart_service()
+            #await reconnect_websocket(loop)
         except Exception as e:
             print(f"Error in websocket_listener: {e}")
             await asyncio.sleep(1)
@@ -537,6 +610,106 @@ async def update_server_id_and_restart_ws(video_server_id):
     await restart_websocket_connection(loop)
 
 
+
+async def install_update(request):
+    try:
+        # Retrieve and log the raw request body
+        raw_body = await request.text()
+        print(f"Received request body: {raw_body}")
+
+        # Parse the body as JSON
+        request_data = await request.json()
+        branch = request_data.get('branch')
+        version = request_data.get('version')
+        if not branch:
+            print("Branch not specified in the request.")
+            return web.json_response({
+                'success': False,
+                'message': "Branch not specified in the request."
+            }, status=400)
+
+        print(f"Branch Name: {branch}")
+
+        # Git configuration and execution setup
+        
+        env = os.environ.copy()
+        env['HOME'] = user_home 
+
+        # Check if the safe directory is already configured, add it if not
+        print(f"Checking if the directory is safe for Git operations: {app_directory}")
+        result = await asyncio.create_subprocess_exec(
+            'git', 'config', '--global', '--get-all', 'safe.directory', 
+            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, env=env
+        )
+        stdout, stderr = await result.communicate()
+        if result.returncode != 0 or app_directory not in stdout.decode():
+            print(f"Safe directory not configured. Adding it: {app_directory}")
+            await run_git_command(['git', 'config', '--global', '--add', 'safe.directory', app_directory], env)
+        else:
+            print(f"Safe directory already configured: {app_directory}")
+
+        # Force reset the working directory to avoid any local changes blocking the operation
+        print("Forcing reset of the working directory...")
+        await run_git_command(['git', 'reset', '--hard'], env, cwd=app_directory)
+
+        # After hard reset, proceed with the fetch and reset to the remote branch
+        print(f"Fetching the latest changes from the remote repository (origin)...")
+        await run_git_command(['git', 'fetch', 'origin'], env, cwd=app_directory)
+
+        print(f"Resetting the branch {branch} to match remote (origin/{branch})...")
+        await run_git_command(['git', 'reset', '--hard', f'origin/{branch}'], env, cwd=app_directory)
+
+        set_key(env_location, "VERSION", version)
+        
+        # Sequentially run the OTA update script
+        print(f"Running OTA update script with branch argument: {branch}")
+        script_path = os.path.join(app_directory, 'ota_update.sh')
+        result = await asyncio.create_subprocess_exec(
+            script_path, branch, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
+        )
+        stdout, stderr = await result.communicate()
+        if result.returncode != 0:
+            print(f"OTA update script failed with stderr: {stderr.decode()}")
+            raise RuntimeError(f"OTA update script failed: {stderr.decode()}")
+
+        print(f"OTA update completed successfully: {stdout.decode()}")
+
+        # Respond with success
+        return web.json_response({
+            'success': True,
+            'message': f'Successfully updated to the {branch} branch and completed the OTA update.'
+        })
+
+    except Exception as e:
+        print(f"An error occurred: {str(e)}")
+        return web.json_response({
+            'success': False,
+            'message': f"An error occurred: {str(e)}"
+        }, status=500)
+
+
+async def run_git_command(command, env, cwd=None):
+    """Helper function to run git commands sequentially with error handling."""
+    process = await asyncio.create_subprocess_exec(
+        *command,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+        env=env,
+        cwd=cwd
+    )
+    stdout, stderr = await process.communicate()
+
+    if process.returncode != 0:
+        error_message = stderr.decode()
+        raise RuntimeError(f"Git command failed: {error_message}")
+    
+    return stdout.decode()
+
+
+
+
+            
+
 async def restart_server(request):
     try:
         request_data = await request.json()
@@ -548,6 +721,13 @@ async def restart_server(request):
         
         await helper.restart_service()
         return web.json_response({'status': 'success', 'message': 'Server restarted successfully'})
+    except Exception as e:
+        return web.json_response({'status': 'error', 'message': str(e)})
+
+async def check_version(request):
+    try:
+        data = app_version
+        return web.json_response({'status': 'success', 'message': str(data)})
     except Exception as e:
         return web.json_response({'status': 'error', 'message': str(e)})
 
@@ -575,9 +755,29 @@ async def server_config(request):
 async def index(request):
     global server_running_status, flag, fixed_vs_server, ip_address
 
+    # Check for Basic Auth in the request headers
+    auth_header = request.headers.get('Authorization')
+    if not auth_header:
+        return web.Response(status=401, headers={'WWW-Authenticate': 'Basic realm="Access to 192.168.1.161"'})
+    
+    # Decode the Base64 encoded username:password
+    try:
+        auth_type, auth_credentials = auth_header.split(" ")
+        if auth_type != "Basic":
+            raise ValueError("Unsupported auth type")
+
+        decoded_credentials = base64.b64decode(auth_credentials).decode("utf-8")
+        request_username, request_password = decoded_credentials.split(":", 1)
+    except Exception:
+        return web.Response(status=401, headers={'WWW-Authenticate': 'Basic realm="Access to 192.168.1.161"'})
+
+    # Verify the provided credentials
+    if request_username != USERNAME or request_password != PASSWORD:
+        return web.Response(status=401, headers={'WWW-Authenticate': 'Basic realm="Access to 192.168.1.161"'})
+
+    # Process request if authenticated
     if fixed_vs_server and flag:
         ws_url = fixed_vs_server
-        #asyncio.ensure_future(restart_websocket_connection(ws_url, fixed_server=True))
 
     context = {
         'fixed_vs_server': fixed_vs_server,
@@ -593,9 +793,8 @@ async def index(request):
         if fx_video_server_id:
             loop = asyncio.get_event_loop()
             loop.create_task(update_server_id_and_restart_ws(fx_video_server_id))
-        
-            print('new server')
-            context['video_server_status'] = f'Video server {video_server_id} is running'
+
+            context['video_server_status'] = f'Video server {fx_video_server_id} is running'
             return web.json_response({'video_server_status': context['video_server_status']})
         else:
             return web.json_response({'video_server_status': 'Please enter valid details'})
@@ -622,6 +821,8 @@ async def init_app(loop):
     app.router.add_post('/', index)
     app.router.add_static('/static', static_path)
     app.router.add_post('/restart_server', restart_server)
+    app.router.add_post('/install_update', install_update)
+    app.router.add_get('/check_version', check_version)
     app.router.add_get('/check_server', check_server)
     app.router.add_get('/server_config', server_config)
 

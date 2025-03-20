@@ -6,154 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Server Status</title>
     <link rel="stylesheet" href="/static/style.css">
-    <script>
-
-        function showToast(message) {
-            const toastContainer = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerText = message;
-            toastContainer.appendChild(toast);
-
-            // Show toast with animation
-            setTimeout(() => {
-                toast.classList.add('show');
-            }, 100);
-
-            // Remove toast after 3 seconds
-            setTimeout(() => {
-                toast.classList.remove('show');
-                setTimeout(() => {
-                    toastContainer.removeChild(toast);
-                }, 10000); // Delay to match the transition time
-            }, 10000);
-        }
-
-        function updateTime() {
-            const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            const seconds = String(now.getSeconds()).padStart(2, '0');
-            const timeString = `${hours}:${minutes}:${seconds}`;
-            document.getElementById('current_time').innerText = timeString;
-        }
-
-        setInterval(updateTime, 1000);
-        window.onload = updateTime;
-
-        function showForm() {
-            //document.getElementById('change_server_warning').style.display = 'none';
-            document.getElementById('button-cluster').style.display = 'none';
-            document.getElementById('change_server_form').style.display = 'block';
-
-            showToast('Warning: Changing the video server ID will result in the permanent loss of all data. Please consult with the administrator before proceeding with any modifications.');
-        }
-
-        function hideForm() {
-            //document.getElementById('change_server_warning').style.display = 'block';
-            document.getElementById('button-cluster').style.display = 'block';
-            document.getElementById('change_server_form').style.display = 'none';
-
-            const toastContainer = document.getElementById('toast-container');
-            while (toastContainer.firstChild) {
-                toastContainer.removeChild(toastContainer.firstChild);
-            }
-        }
-
-        async function submitForm(event) {
-            event.preventDefault();
-            const videoServerId = document.getElementById('video_server_id').value;
-            document.getElementById('video_server_id').value = ''
-            const response = await fetch('/', {
-                method: 'POST',
-                body: new URLSearchParams({
-                    video_server_id: videoServerId
-                })
-            });
-            const data = await response.json();
-            handleRestartClick(1)
-            if (data.video_server_status) {
-
-                document.getElementById('video_server_status').innerText = data.video_server_status;
-                document.getElementById('video_server_status').style.color = "#172554";
-                document.getElementById('video_server_status').style.fontWeight = 'bold';
-
-            }
-            document.getElementById('change_server_form').style.display = 'none';
-            document.getElementById('change_server_warning').style.display = 'block';
-            document.getElementById('change_server_button').style.display = 'block';
-            document.getElementById('button-cluster').style.display = 'block';
-        }
-
-
-
-        function handleRestartClick(factory_reset = 0) {
-            const loadingOverlay = document.getElementById('loading_overlay');
-            loadingOverlay.style.display = 'flex'; // Show loading overlay
-            loadingOverlay.style.opacity = '1'; // Make it fully visible
-
-            (async function () {
-                try {
-                    const request_data = { trigger: factory_reset }
-                    const response = await fetch('/restart_server', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(request_data)
-                    });
-                    const result = await response.json();
-
-                    if (result.status === 'success') {
-                        // Polling the server to check if it's back online
-                        const checkServerStatus = async () => {
-                            try {
-                                const statusResponse = await fetch('/check_server', {
-                                    method: 'GET',
-                                    headers: { 'Content-Type': 'application/json' }
-                                });
-                                return statusResponse.message !== "No Server Running" && statusResponse.status !== 500;
-                            } catch {
-                                return false; // Server is still down
-                            }
-                            return false;
-                        };
-
-                        const waitForServer = async () => {
-                            let serverOnline = false;
-                            while (!serverOnline) {
-                                serverOnline = await checkServerStatus();
-                                if (!serverOnline) {
-                                    await new Promise(resolve => setTimeout(resolve, 10000)); // Wait 10 seconds before retry
-                                }
-                            }
-                            window.location.reload(); // Reload the page once the server is back online
-                        };
-
-                        waitForServer();
-                    } else {
-                        alert('Failed to restart server: ' + result.message);
-                        loadingOverlay.style.display = 'none'; // Hide loading overlay if restart fails
-                        loadingOverlay.style.opacity = '0';
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    loadingOverlay.style.display = 'none'; // Hide loading overlay on error
-                    loadingOverlay.style.opacity = '0';
-                }
-            })();
-        }
-
-
-    </script>
+    <script src="/static/main.js" defer></script>
+    <script src="/static/utils.js" defer></script>
+    <script src="/static/camera.js" defer></script>
 </head>
 
 <body>
     <div class="container">
-        <header style="background-color: #172554; display: flex; align-items: center; padding: 10px;">
-            <img src="../static/accelx-logo.png" alt="logo" style="height: 50px; margin-right: 20px;">
-            <a href="https://acceleye.com"
-                style=" color: white; font-size: 24px; font-weight: bold; text-decoration: none;">
-                AccelEye
-            </a>
+        <header>
+            <img src="../static/accelx-logo.png" alt="logo">
+            <a href="https://acceleye.com">AccelEye</a>
         </header>
         <div class="innerContainer">
 
@@ -192,156 +54,29 @@
                 <p>Warning: Changing the video server ID will result in the permanent loss of all data. Please consult with the administrator before proceeding with any modifications.</p>
             </div> -->
             <div id="button-cluster">
-                <button style="background-color: brown;" id="restart_server_button"
-                    onclick="handleRestartClick()">Restart</button>
+                <button id="restart_server_button" onclick="handleRestartClick()">Restart</button>
                 <button id="change_server_button" onclick="showForm()">Change Video Server</button>
-
             </div>
-            <form style="display:none" id="change_server_form" action="/" method="post" onsubmit="submitForm(event)">
+            <form id="change_server_form" action="/" method="post" onsubmit="submitForm(event)">
                 <div class="input-group">
                     <label for="video_server_id">Enter Video Server ID</label>
-                    <input style="max-width: 450px;" type="text" id="video_server_id" name="video_server_id" required>
+                    <input type="text" id="video_server_id" name="video_server_id" required>
                 </div>
                 <button type="submit">Submit</button>
-                <button style="background-color: brown;" id="cancel_change_server_button"
-                    onclick="hideForm()">Cancel</button>
+                <button id="cancel_change_server_button" onclick="hideForm()">Cancel</button>
             </form>
         </div>
     </div>
 
     <!-- Toast Container -->
-    <div id="toast-container" style="
-    position: fixed;
-    top: 10px;
-    right: 10px;
-    z-index: 1000;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-"></div>
+    <div id="toast-container"></div>
+
     <!-- Loading Section -->
-    <div id="loading_overlay" style="
-        display: none; 
-        position: fixed; 
-        top: 0; 
-        left: 0; 
-        width: 100vw; 
-        height: 100vh; 
-        background-color: rgba(0, 0, 0, 0.7);
-        color: white; 
-        text-align: center; 
-        font-size: 1.5em; 
-        z-index: 1000; 
-        opacity: 0; 
-        transition: opacity 0.5s ease; 
-        justify-content: center; 
-        align-items: center; 
-    ">
-        <div style="
-            margin: auto;
-            padding: 20px;
-            background-color: rgba(0, 0, 0, 0.8); /* Slightly darker background for content */
-            border-radius: 8px; /* Rounded corners for better look */
-        ">
+    <div id="loading_overlay" class="loading-overlay">
+        <div class="loading-content">
             Restarting... Please wait.
         </div>
     </div>
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                // Fetch the JSON data from the server
-                const response = await fetch('/server_config', {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-
-                if (!response.ok) {
-                    throw new Error('Network response was not ok');
-                }
-
-                const data = await response.json();
-                const tableBody = document.querySelector('#camera_table tbody');
-                const numberOfColumns = tableBody.querySelectorAll('tr:first-child td').length;
-
-                // Clear any existing rows
-                tableBody.innerHTML = '';
-
-                if (data.cameras && data.cameras.length > 0) {
-                    data.cameras.forEach(camera => {
-                        const row = document.createElement('tr');
-
-                        // Create and append Camera ID cell
-                        const idCell = document.createElement('td');
-                        idCell.innerText = camera.camera_id;
-                        row.appendChild(idCell);
-
-                        // Extract the part after @ and before /
-                        const urlParts = camera.camera_url.split('@')[1]; // Get the part after '@'
-                        if (urlParts) {
-                            const [hostPart] = urlParts.split('/'); // Get the part before '/'
-                            const [ipAddress, port] = hostPart.split(':'); // Split IP and port
-
-                            // Create and append Address cell
-                            const addressCell = document.createElement('td');
-                            addressCell.innerText = port ? `${ipAddress}:${port}` : ipAddress;
-                            row.appendChild(addressCell);
-                        } else {
-                            // Handle case where camera URL doesn't have '@' or '/' (fallback)
-                            const addressCell = document.createElement('td');
-                            addressCell.innerText = 'N/A';
-                            row.appendChild(addressCell);
-                        }
-
-                        // Camera Type
-                        const typeCell = document.createElement('td');
-                        typeCell.innerText = camera.camera_type;
-                        typeCell.classList.add('capitalize');
-                        row.appendChild(typeCell);
-
-                        // Create and append Camera Status cell
-                        const statusCell = document.createElement('td');
-                        statusCell.innerText = camera.camera_running_status ? 'Active' : 'Inactive';
-                        statusCell.style.color = camera.camera_running_status ? 'green' : 'red';
-                        statusCell.style.fontWeight = 'bold';
-                        row.appendChild(statusCell);
-
-                        // Append the row to the table body
-                        tableBody.appendChild(row);
-                    });
-                } else {
-                    // Create a row that spans all columns with a message
-                    const noCam = document.getElementById('error_message');
-                    // Clear any existing rows
-                    tableBody.innerHTML = '';
-
-                    noCam.innerHTML = 'No Camera Found.. Handle From Frontend';
-                    noCam.style.textAlign = 'center'; // Center the text
-                    noCam.style.fontStyle = 'italic'; // Italicize the text
-                    // Add border and padding styles
-                    noCam.style.border = '2px solid #172554'; // Add a red border
-                    noCam.style.padding = '2px'; // Add 2px padding
-                }
-            } catch (error) {
-                console.error('Error fetching JSON:', error);
-                // Handle the error case with a message
-                const tableBody = document.querySelector('#camera_table tbody');
-                const errorBody = document.getElementById('error_message');
-                // Clear any existing rows
-                tableBody.innerHTML = '';
-
-                errorBody.innerHTML = 'No Camera Installed';
-                errorBody.style.textAlign = 'center'; // Center the text
-                errorBody.style.fontStyle = 'italic'; // Italicize the text
-                // Add border and padding styles
-                errorBody.style.border = '2px solid #172554'; // Add a red border
-                errorBody.style.padding = '2px'; // Add 2px padding
-            }
-        });
-
-
-    </script>
-
-
 </body>
 
 </html>
