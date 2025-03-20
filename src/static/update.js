@@ -1,6 +1,9 @@
-const token = 'eCZQp4QYQLee7_dzVodr';
+// const token = 'y_1htLH2vs3My9CtGXk5';
+const token = 'zFhaVbHzbbGkWpijdXH5';
 const repoApiUrl = 'https://gitlab.accelx.net/api/v4/projects/152/repository/branches';
+const commitsApiUrl = 'https://gitlab.accelx.net/api/v4/projects/152/repository/commits?ref_name=API-Server-ML';
 let currentVersion = "";
+
 const loadBranchesBtn = document.getElementById('loadBranchesBtn');
 
 async function fetchVersion() {
@@ -17,12 +20,17 @@ async function fetchVersion() {
         const data = await response.json();
         console.log(data)
         currentVersion = data.message;
+        console.log("Current version:", currentVersion);
+
     } catch (error) {
         console.error("Failed to fetch version:", error.message);
     }
 }
 
-async function fetchBranches() {
+
+
+// Function to fetch the latest commits from the API-Server-ML branch
+async function fetchCommits() {
     try {
         // Add spinner
         const errorMessage = document.getElementById('errorMessage');
@@ -30,7 +38,7 @@ async function fetchBranches() {
         loadBranchesBtn.classList.add('loading');
         loadBranchesBtn.disabled = true;
 
-        const response = await fetch(repoApiUrl, {
+        const response = await fetch(commitsApiUrl, {
             method: 'GET',
             headers: {
                 'PRIVATE-TOKEN': token
@@ -41,9 +49,11 @@ async function fetchBranches() {
             throw new Error(`GitLab API error: ${response.status} - ${response.statusText}`);
         }
 
-        const data = await response.json();
-        data.sort((a, b) => new Date(b.commit.authored_date) - new Date(a.commit.authored_date));
-        displayBranches(data);
+        let commits = await response.json();
+
+        commits = commits.slice(0, 2)
+
+        displayCommits(commits);
 
     } catch (error) {
         handleError(error.message);
@@ -55,39 +65,43 @@ async function fetchBranches() {
     }
 }
 
-async function displayBranches(branches) {
+
+// Function to display the commits in the table
+async function displayCommits(commits) {
     const table = document.getElementById('branchTable');
     const tableBody = document.getElementById('branchTableBody');
     table.style.display = 'table';
     tableBody.innerHTML = '';
+
+    // Fetch the current installed version
     await fetchVersion();
 
-
-
-    // Filter out the master branch
-    const filteredBranches = branches.filter(branch => branch.name !== 'master');
-
-    if (filteredBranches.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="3">No branches found.</td></tr>';
+    // Only display the latest 2 commits
+    if (commits.length === 0) {
+        tableBody.innerHTML = '<tr><td colspan="4">No commits found.</td></tr>';
     } else {
-        filteredBranches.forEach(branch => {
-            const row = document.createElement('tr');
+        commits.forEach((commit, index) => {
+            let row = document.createElement('tr');
 
-            const installCell = branch.commit.message === currentVersion
+            const installCell = commit.message.trim() === currentVersion.trim()
                 ? `<td style="color: green; font-weight: bold;">Installed</td>`
-                : `<td style="cursor: pointer;text-decoration: underline; color: blue;" onclick="install('${branch.name}', '${branch.commit.message}')">Install</td>`;
+                : `<td style="cursor: pointer;text-decoration: underline; color: blue;"
+                onclick="install('API-Server-ML',
+                '${commit.message.replace(/'/g, "\\'").replace(/\n/g, "")}')">Install</td>`;
 
             row.innerHTML = `
-                <td>${branch.name}</td>
-                <td>${branch.commit.message}</td>
-                <td>${new Date(branch.commit.authored_date).toLocaleString()}</td>
+                <td>API-Server-ML</td>
+                <td>${commit.message}</td>
+                <td>${new Date(commit.authored_date).toLocaleString()}</td>
                 ${installCell}
             `;
+
             tableBody.appendChild(row);
         });
     }
 
 }
+
 
 function handleError(message) {
     const errorMessage = document.getElementById('errorMessage');
@@ -97,7 +111,33 @@ function handleError(message) {
     console.error(message);
 }
 
-document.getElementById('loadBranchesBtn').addEventListener('click', fetchBranches);
+async function updateCameras() {
+    const div = document.getElementById("camera-update");
+    let ul = document.createElement("ul");
+
+    try {
+        const response = await fetch("././server_config.json", {
+            method: "GET"
+        })
+        const json_data = await response.json()
+        const cameras = json_data["cameras"];
+        let li = document.createElement("li");
+
+        cameras.forEach((camera, index) => {
+            console.log(camera);
+            li.innerHTML = `
+                ${camera.camera_url} <button>Update</button> <button>Delete</button>
+            `
+            ul.appendChild(li);
+        })
+        div.appendChild(ul);
+    } catch {
+        throw new Error("Cameras not found") 
+    }
+}
+
+document.getElementById('loadBranchesBtn').addEventListener('click', fetchCommits);
+document.getElementById("edit_camera_stats").addEventListener('click', updateCameras);
 
 
 

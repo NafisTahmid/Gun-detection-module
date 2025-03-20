@@ -106,7 +106,8 @@ async def cam_check_async(cam_url, cam_type, group_name):
 
         elif cam_type == 'rtsp':
             print('rtsp')
-            cap = get_frame_rtsp(cam_url, width, height, latency)
+            #cap = get_frame_rtsp(cam_url, width, height, latency)
+            cap = cv2.VideoCapture(cam_url)
             if not cap.isOpened():
                 cap.release()
                 return {"message": f"frame not Captured with URL {cam_url}", "status_code": 2005, "cam_url": cam_url}
@@ -136,7 +137,7 @@ async def cam_check_async(cam_url, cam_type, group_name):
 
 
 
-def set_camera_config(camera_url, camera_id, camera_type, camera_running_status, threshold, filename=config_location):
+def set_camera_config(camera_url, camera_id, camera_type, camera_running_status, threshold,third_party, filename=config_location):
     # Ensure the file exists and has the right structure
     if os.path.exists(filename):
         with open(filename, 'r') as json_file:
@@ -153,6 +154,7 @@ def set_camera_config(camera_url, camera_id, camera_type, camera_running_status,
             entry["camera_type"] = camera_type
             entry["camera_running_status"] = camera_running_status
             entry["threshold"] = threshold
+            entry["third_party"] = third_party
             found = True
             break
     
@@ -162,7 +164,8 @@ def set_camera_config(camera_url, camera_id, camera_type, camera_running_status,
             "camera_url": camera_url,
             "camera_type": camera_type,
             "camera_running_status": camera_running_status,
-            "threshold": threshold
+            "threshold": threshold,
+            "third_party": third_party
         })
     
     # Write the updated data back to the file
@@ -234,3 +237,5 @@ async def reset_server():
 
     except Exception as e:
         return f"An error occurred: {str(e)}"
+
+

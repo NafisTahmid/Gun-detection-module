@@ -53,8 +53,9 @@
             {% endif %}
 
             <div id="button-cluster">
-                <button id="restart_server_button" onclick="handleRestartClick()">Restarttt</button>
+                <button id="restart_server_button" onclick="handleRestartClick()">Restart Server</button>
                 <button id="change_server_button" onclick="showForm()">Change Video Server</button>
+                <button id="edit_camera_stats" style="background-color: #A52A2A">Edit camera stats</button>
             </div>
             <form id="change_server_form" action="/" method="post" onsubmit="submitForm(event)">
                 <div class="input-group">
@@ -73,7 +74,7 @@
             <div class="section">
                 <h4>Version Control</h4>
                 <div class="button-container">
-                    <button id="loadBranchesBtn">Check For Updates ... </button>
+                    <button id="loadBranchesBtn">Check For Updates</button>
                 </div>
                 <table id="branchTable" style="display: none;">
                     <thead>
@@ -104,6 +105,9 @@
             <p id="loading_message">Restarting... Please wait.</p>
         </div>
     </div>
+
+    <!-- Camera update section -->
+     <div id="camera-update"></div>
 
 
 </body>

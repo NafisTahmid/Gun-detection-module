@@ -6,6 +6,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             headers: { 'Content-Type': 'application/json' }
         });
 
+        console.log(response.statusText);  // Debugging the response
+
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }

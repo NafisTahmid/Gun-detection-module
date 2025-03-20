@@ -55,7 +55,7 @@ signal_handler = SignalHandler()
 
 # AIOHTTP SERVER CONFIG
 HOST = "0.0.0.0"
-PORT = 80
+PORT = 8080
 
 USERNAME = "admin"
 PASSWORD = "password"
@@ -73,7 +73,8 @@ app_directory = os.path.join(user_home, 'acceleye-detection-app')
 app_version = os.getenv("VERSION", "V 1.00")
 env_location = os.path.join(app_directory, ".env")
 load_dotenv(env_location)
-config_location = os.path.join(app_directory, "server_config.json")
+# config_location = os.path.join(app_directory, "server_config.json")
+config_location = "D://Nafis//gun-detection-module//src//server_config.json"
 static_path = os.path.join(pwd, 'static')
 
 # Configuration Constants
@@ -91,6 +92,7 @@ ws_fixed = None
 video_server_id = None
 set_ip = True 
 ws_task = None
+
 
 def get_ip_addresses(interface):
     try:
@@ -148,6 +150,7 @@ print(f"Local IP address: {ip_address}")
 server_running_status = "No Server Running"
 flag = True 
 
+
 class Frame:
     _instance = None
 
@@ -188,16 +191,18 @@ class Frame:
         return False
 
 
-def capture_frame(camera_id, cam_type, camera_url, abs_diff_threshold, capture_queue):
+def capture_frame(camera_id, cam_type, camera_url, abs_diff_threshold, capture_queue,third_party):
     """Thread to capture frames from the camera."""
-    latency = 100
-    width = 640
-    height = 480
+    latency = 50
+    width = 1080
+    height = 720
 
     try:
         if cam_type == 'jpeg':
             while camera_processes.get(camera_id, False):
                 try:
+                    time.sleep(1)
+
                     response = requests.get(camera_url)
                     if response.status_code == 200:
                         frame = cv2.imdecode(np.frombuffer(response.content, np.uint8), cv2.IMREAD_COLOR)
@@ -207,8 +212,12 @@ def capture_frame(camera_id, cam_type, camera_url, abs_diff_threshold, capture_q
                         if accurate:
                             frame_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 95])[1].tobytes()
                             frame = {'detect_event': 'Signal','frame':frame_data}
-                            capture_queue.put(frame)
+                            if capture_queue.qsize() < MAX_QUEUE_SIZE:
+                                capture_queue.put(frame)
                             print(f"Frame for camera {camera_id} added to queue.")
+                        
+                        frame = None
+                        #gc.collect()
                     else:
                         print(f"Failed to fetch image from URL {camera_url}. Status code: {response.status_code}")
                         no_signal_msg = {'detect_event': 'No Signal'}
@@ -218,6 +227,7 @@ def capture_frame(camera_id, cam_type, camera_url, abs_diff_threshold, capture_q
                     print(f"Error capturing frame for {camera_id}: {e}")
                     time.sleep(5)
         elif cam_type == 'rtsp':
+
             gst_str = (
                 'rtspsrc async-handling=true location={} latency={} retry=5 ! '
                 'rtph264depay ! h264parse ! '
@@ -225,6 +235,7 @@ def capture_frame(camera_id, cam_type, camera_url, abs_diff_threshold, capture_q
                 'nvv4l2decoder enable-max-performance=1 ! '
                 'video/x-raw(memory:NVMM), format=(string)NV12 ! '
                 'nvvidconv ! video/x-raw, width={}, height={}, format=(string)BGRx ! '
+                'videorate ! video/x-raw, framerate=(fraction){}/1 ! '
                 'videoconvert ! video/x-raw, format=(string)BGR ! '
                 'appsink'
             ).format(camera_url, latency, width, height, capture_interval_seconds)
@@ -245,7 +256,8 @@ def capture_frame(camera_id, cam_type, camera_url, abs_diff_threshold, capture_q
                 if not cap.isOpened():
                     print(f"Failed to open RTSP stream for camera {camera_id}")
                     no_signal_msg = {'detect_event': 'No Signal'}
-                    capture_queue.put(no_signal_msg)
+                    if capture_queue.qsize() < MAX_QUEUE_SIZE:
+                        capture_queue.put(no_signal_msg)
                     cap.release()
                     time.sleep(5)
                     cap = cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
@@ -257,14 +269,16 @@ def capture_frame(camera_id, cam_type, camera_url, abs_diff_threshold, capture_q
                     print(f"Failed to grab frame from camera {camera_id}, retrying...")
 
                     no_signal_msg = {'detect_event': 'No Signal'}
-                    capture_queue.put(no_signal_msg)
+                    if capture_queue.qsize() < MAX_QUEUE_SIZE:
+                        capture_queue.put(no_signal_msg)
+                    
                     cap.release()
                     
                     time.sleep(5)
                     cap = cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
                     continue
 
-                time.sleep(1)
+                #time.sleep(1)
                 absdiff_check = Frame.get_instance()
                 accurate = absdiff_check.compare_frame(cam_id=camera_id, target_frame=frame, threshold=abs_diff_threshold)
 
@@ -272,8 +286,12 @@ def capture_frame(camera_id, cam_type, camera_url, abs_diff_threshold, capture_q
                     #frame_data = cv2.imencode('.jpg', frame, [cv2.IMWRITE_JPEG_QUALITY, 95])[1].tobytes()
                     frame_data = cv2.imencode('.jpg', frame)[1].tobytes()
                     frame = {'detect_event': 'Signal','frame':frame_data}
-                    capture_queue.put(frame)
+                    if capture_queue.qsize() < MAX_QUEUE_SIZE:
+                        capture_queue.put(frame)
+                    #capture_queue.put(frame)
                     print(f"Frame for camera {camera_id} added to queue.")
+                frame = None
+                #gc.collect()
 
             cap.release()
     except Exception as e:
@@ -288,6 +306,7 @@ async def send_frame_over_websocket(combined_message):
         try:
             await ws.send(combined_message)
             print("Sent frame.")
+            
         except websockets.ConnectionClosed as e:
             print(f"WebSocket connection closed during send: {e}")
             ws_flag = False
@@ -456,6 +475,8 @@ async def websocket_listener(loop):
                         camera_type = entry['camera_type']
                         camera_running_status = entry['camera_running_status']
                         threshold = entry['threshold']
+                        third_party = entry['third_party']
+                        print('third_party: ',third_party)
                         #if camera_running_status == 'true': for browser websoket testing
                         if camera_running_status == True:
 
@@ -467,7 +488,7 @@ async def websocket_listener(loop):
                             # Start capture and send threads
                             capture_thread = threading.Thread(
                                 target=capture_frame, 
-                                args=(camera_id, camera_type, camera_url, threshold, capture_queue)
+                                args=(camera_id, camera_type, camera_url, threshold, capture_queue,third_party)
                             )
                             capture_thread.daemon = True
                             capture_thread.start()
@@ -496,6 +517,8 @@ async def websocket_listener(loop):
                 if 'camera_id' in data and 'camera_running_status' in data:
                     camera_id = data.get('camera_id')
                     camera_run = data.get('camera_running_status', False)
+                    third_party = data.get('third_party', False)
+                    print('third_party:: ',third_party)
                     #if camera_run.lower() == 'true': for sending browser socket for test
                     if camera_run == True:
                         if camera_id in camera_processes and camera_processes[camera_id]:
@@ -506,14 +529,14 @@ async def websocket_listener(loop):
                             camera_url = data.get('camera_url')
                             cam_type = data.get('camera_type')
                             abs_diff_threshold = float(data.get('threshold', 5.0))
-                            helper.set_camera_config(camera_url, data.get('camera_id'), cam_type, data.get('camera_running_status'),abs_diff_threshold)
+                            helper.set_camera_config(camera_url, data.get('camera_id'), cam_type, data.get('camera_running_status'),abs_diff_threshold,third_party)
                             capture_queue = thread_queue.Queue(maxsize=MAX_QUEUE_SIZE)
                             camera_processes[camera_id] = True
 
                             # Start capture and send threads
                             capture_thread = threading.Thread(
                                 target=capture_frame, 
-                                args=(camera_id, cam_type, camera_url, abs_diff_threshold, capture_queue)
+                                args=(camera_id, cam_type, camera_url, abs_diff_threshold, capture_queue,third_party)
                             )
                             capture_thread.daemon = True
                             capture_thread.start()
@@ -539,7 +562,7 @@ async def websocket_listener(loop):
                             print(f"Stopped capturing for camera {camera_id}.")
                             abs_diff_threshold = float(data.get('threshold', 5.0))
 
-                            helper.set_camera_config(data.get('camera_url'), data.get('camera_id'), data.get('camera_type'), data.get('camera_running_status'), abs_diff_threshold)
+                            helper.set_camera_config(data.get('camera_url'), data.get('camera_id'), data.get('camera_type'), data.get('camera_running_status'), abs_diff_threshold, data.get('third_party'))
                 elif 'camera_check_url' in data:
                     print('camera_check_url ', data.get('camera_check_url'))
                     
@@ -707,9 +730,6 @@ async def run_git_command(command, env, cwd=None):
 
 
 
-
-            
-
 async def restart_server(request):
     try:
         request_data = await request.json()
@@ -723,6 +743,7 @@ async def restart_server(request):
         return web.json_response({'status': 'success', 'message': 'Server restarted successfully'})
     except Exception as e:
         return web.json_response({'status': 'error', 'message': str(e)})
+
 
 async def check_version(request):
     try:
@@ -848,6 +869,7 @@ if __name__ == "__main__":
     web.run_app(app, host=HOST, port=PORT)
 
     try:
+
         loop.run_forever()
     except KeyboardInterrupt:
         shutdown(None, None)

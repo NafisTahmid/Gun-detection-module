@@ -1,3 +1,5 @@
+
+
 function showForm() {
     //document.getElementById('change_server_warning').style.display = 'none';
     document.getElementById('button-cluster').style.display = 'none';
@@ -23,6 +25,7 @@ async function install(branch, version) {
     loadingOverlay.style.opacity = '1'; // Make it fully visible
 
     try {
+        console.log('Installing branch:', branch, 'Version:', version);
         // Perform POST request to install the selected branch
         const response = await fetch('/install_update', {
             method: 'POST',
@@ -31,7 +34,7 @@ async function install(branch, version) {
             },
             body: JSON.stringify({
                 branch: branch,
-                version: version
+                version: version // (Nabil)
             })
         });
 
@@ -51,10 +54,6 @@ async function install(branch, version) {
             document.getElementById('install_status').style.color = "blue";
             document.getElementById('install_status').style.fontWeight = 'bold';
         }
-
-
-
-
 
     } catch (error) {
         console.error('Error installing branch:', error);
