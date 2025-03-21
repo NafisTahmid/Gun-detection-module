@@ -112,97 +112,161 @@ function handleError(message) {
 }
 
 document.getElementById('loadBranchesBtn').addEventListener('click', fetchCommits);
+
 // New module
-
-
-// Fetch all cameras and populate the table
+// Fetch cameras and populate the table
 async function fetchCameras() {
-    const response = await fetch('/cameras', {
-        method: "GET"
-    });
-    const data = await response.json();
-    const tableBody = document.querySelector('#camera_table tbody');
-    tableBody.innerHTML = '';
+    const cameraContainer = document.getElementById("edit-camera-container");
+    cameraContainer.style.display = "block";
+    try {
+        const response = await fetch('/cameras');
+        if (!response.ok) {
+            throw new Error('Failed to fetch cameras');
+        }
+        const cameras = await response.json();
+        console.log('Fetched cameras:', cameras); // Debugging: Check fetched data
+        const tableBody = document.getElementById("table_body");
+        if (!tableBody) {
+            console.error('Table body not found');
+            return;
+        }
 
-    data.forEach(camera => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${camera.camera_id}</td>
-            <td>${camera.camera_url}</td>
-            <td>${camera.camera_type}</td>
-            <td>${camera.camera_running_status ? 'Active' : 'Inactive'}</td>
-            <td>
-                <button onclick="openEditModal(${camera.camera_id})">Edit</button>
-                <button onclick="deleteCamera(${camera.camera_id})">Delete</button>
-            </td>
-        `;
-        tableBody.appendChild(row);
-    });
-}
+        // Clear existing rows
+        tableBody.innerHTML = '';
 
-// Open the edit modal with camera details
-async function openEditModal(cameraId) {
-    const response = await fetch(`/cameras/${cameraId}`);
-    const camera = await response.json();
+        // Loop through the camera data and create table rows
+        cameras.forEach((camera) => {
+            const row = document.createElement('tr');
+            
+            const activeText = document.createElement("span");
+            activeText.innerText = "Active";
+            activeText.style.color = "#336600";
+            activeText.style.fontWeight = 700;
 
-    document.getElementById('editCameraId').value = camera.camera_id;
-    document.getElementById('editCameraUrl').value = camera.camera_url;
-    document.getElementById('editCameraType').value = camera.camera_type;
-    document.getElementById('editCameraStatus').value = camera.camera_running_status;
-    document.getElementById('editThreshold').value = camera.threshold;
-    document.getElementById('editThirdParty').value = camera.third_party;
+            const inactiveText = document.createElement("span");
+            inactiveText.innerText = "Inactive";
+            inactiveText.style.color = "#993300";
+            inactiveText.style.fontWeight = 700;
 
-    document.getElementById('editModal').style.display = 'block';
-}
+            // Add camera data to the row
+            row.innerHTML = `
+                <td>${camera.camera_id}</td>
+                <td>${camera.camera_url}</td>
+                <td>${camera.camera_type}</td>
+                <td></td>
+                <td></td>
+                <td></td>
+            `;
 
-// Close the edit modal
-function closeEditModal() {
-    document.getElementById('editModal').style.display = 'none';
-}
+            row.children[3].appendChild(camera.camera_running_status ? activeText : inactiveText);
 
-// Handle form submission to update a camera
-document.getElementById('editCameraForm').addEventListener('submit', async (event) => {
-    event.preventDefault();
+            const editButton = document.createElement("button");
+            editButton.innerText = "Edit";
+            editButton.style.backgroundColor = "#FFFF00";
+            editButton.addEventListener("click", () => openEditForm(camera));
+            row.children[4].appendChild(editButton);
 
-    const cameraId = document.getElementById('editCameraId').value;
-    const updatedData = {
-        camera_url: document.getElementById('editCameraUrl').value,
-        camera_type: document.getElementById('editCameraType').value,
-        camera_running_status: document.getElementById('editCameraStatus').value === 'true',
-        threshold: parseFloat(document.getElementById('editThreshold').value),
-        third_party: document.getElementById('editThirdParty').value === 'true'
-    };
+            // Delete button
+            const deleteButton = document.createElement("button");
+            deleteButton.innerText = "Delete";
+            deleteButton.style.backgroundColor = "#FF0000";
+            deleteButton.addEventListener("click", () => deleteCamera(camera.camera_id));
+            row.children[5].appendChild(deleteButton);
 
-    const response = await fetch(`/cameras/${cameraId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updatedData)
-    });
-
-    if (response.ok) {
-        closeEditModal();
-        fetchCameras(); // Refresh the table
-    } else {
-        alert('Failed to update camera.');
-    }
-});
-
-// Delete a camera
-async function deleteCamera(cameraId) {
-    if (confirm('Are you sure you want to delete this camera?')) {
-        const response = await fetch(`/cameras/${cameraId}`, {
-            method: 'DELETE'
+            // Append the row to the table body
+            tableBody.appendChild(row);
         });
 
-        if (response.ok) {
-            fetchCameras(); // Refresh the table
-        } else {
-            alert('Failed to delete camera.');
+        console.log('Table populated successfully'); // Debugging: Confirm rows are appended
+    } catch (error) {
+        console.error('Error fetching cameras:', error);
+        alert('Failed to fetch cameras. Check the console for details.');
+    }
+}
+
+// Function to delete camera
+async function deleteCamera(camera_id) {
+    if (confirm("Are you sure you want to delete the camera?")) {
+        try {
+            const response = await fetch(`/cameras/${camera_id}`, {
+                method: "DELETE"
+            });
+            if (!response.ok) {
+                throw new Error("Failed to delete camera");
+
+            }
+            alert("Camera deleted successfully");
+            await fetchCameras();
+            setTimeout(() => location.reload(), 1000);
+        } catch(error) {
+            console.error("Error deleting camera: ", error);
+            alert("Failed to delete camera. Check the console for details");
         }
     }
 }
 
-// Fetch cameras when the page loads
-// document.addEventListener('DOMContentLoaded', fetchCameras);
+function openEditForm(camera) {
+    // Populate the form with camera details
+    document.getElementById("camera_id").value = camera.camera_id;
+    document.getElementById("camera_url").value = camera.camera_url;
+    document.getElementById("camera_type").value = camera.camera_type;
+    document.getElementById("camera_running_status").checked = camera.camera_running_status;
+    document.getElementById("threshold").value = camera.threshold;
+    document.getElementById("third_party").checked = camera.third_party;
+
+    // Show the form
+    document.getElementById("open_edit_form").style.display = "block";
+}
+
+async function editCamera(event) {
+    // Prevent the default form submission behavior
+    event.preventDefault();
+
+    // Get the camera_id from the input field
+    const camera_id = parseInt(document.getElementById("camera_id").value);
+    const camera_url = document.getElementById("camera_url").value;
+    const camera_type = document.getElementById("camera_type").value;
+    const camera_running_status = document.getElementById("camera_running_status").checked; // Use `.checked` for checkbox
+    const threshold = document.getElementById("threshold").value;
+    const third_party = document.getElementById("third_party").checked; // Use `.checked` for checkbox
+
+    // Form data to be sent in the PUT request
+    const formData = {
+        "camera_id": camera_id,
+        "camera_url": camera_url,
+        "camera_type": camera_type,
+        "camera_running_status": camera_running_status,
+        "threshold": threshold,
+        "third_party": third_party
+    };
+
+    try {
+        // Make the API request to update the camera
+        const response = await fetch(`/cameras/${camera_id}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(formData)
+        });
+
+        if (!response.ok) {
+            throw new Error("API call failed");
+        }
+
+        // Call a function to refresh the cameras list
+        await fetchCameras();
+
+        // Reload the page after 1 second to reflect the changes
+        setTimeout(() => location.reload(), 1000);
+    } catch (error) {
+        console.error("Error editing camera: ", error);
+        alert("Error editing camera. Check the console for details.");
+    }
+}
+// Fetch cameras when user clicks a button
+document.getElementById("edit_camera_stats").addEventListener("click", fetchCameras);
+// Example of calling openEditForm when an edit button is clicked
+document.getElementById("edit-form").addEventListener("submit", editCamera);
 
 

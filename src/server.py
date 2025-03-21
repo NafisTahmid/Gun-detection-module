@@ -24,7 +24,7 @@ from signal_handler import SignalHandler
 import subprocess
 import re
 from dotenv import load_dotenv, set_key
-import aiosqlite
+
 
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
@@ -75,7 +75,8 @@ app_version = os.getenv("VERSION", "V 1.00")
 env_location = os.path.join(app_directory, ".env")
 load_dotenv(env_location)
 # config_location = os.path.join(app_directory, "server_config.json")
-config_location = "D://Nafis//gun-detection-module//src//server_config.json"
+# config_location = "D://Nafis//gun-detection-module//src//server_config.json"
+config_location = "C://Mridul//Accelx//Gun-detection-module//src//server_config.json"
 static_path = os.path.join(pwd, 'static')
 
 # Configuration Constants
@@ -834,25 +835,39 @@ async def on_shutdown(app):
 """New module starts from here"""
 
 # Path to JSON file
-JSON_FILE = "D://Nafis//gun-detection-module//src//server.json"
+JSON_FILE = "C://Mridul//Accelx//Gun-detection-module//src//server_config.json"
 
 # Helper function to read the JSON file
 async def read_json():
-    if os.path.exists(JSON_FILE):
-        with open(JSON_FILE, 'r') as file:
-            return json.load(file)
-    return {"cameras": []}
+    try:
+        if os.path.exists(JSON_FILE):
+            with open(JSON_FILE, 'r') as file:
+                return json.load(file)
+        else:
+            print(f"JSON file not found at {JSON_FILE}")
+            return {"cameras": []}  # Return an empty list if the file doesn't exist
+    except json.JSONDecodeError as e:
+        print(f"Error decoding JSON file: {e}")
+        return {"cameras": []}  # Return an empty list if the JSON is invalid
+    except Exception as e:
+        print(f"Unexpected error reading JSON file: {e}")
+        return {"cameras": []}  # Return an empty list for any other errors
+
 
 # Helper function to write to the JSON file
 async def write_json(data):
     with open(JSON_FILE, 'w') as file:
         json.dump(data, file, indent=4)
 
-# Fetch all cameras
+# Endpoint to fetch cameras
 async def get_cameras(request):
-    data = await read_json()
-    cameras = data["cameras"]
-    return web.json_response(cameras)
+    try:
+        data = await read_json()
+        cameras = data.get("cameras", [])  # Use .get() to avoid KeyError if "cameras" is missing
+        return web.json_response(cameras)
+    except Exception as e:
+        print(f"Error in get_cameras endpoint: {e}")
+        return web.json_response({"error": "Internal Server Error"}, status=500)
 
 # Add a new camera
 async def create_camera(request):
@@ -876,11 +891,21 @@ async def update_camera(request):
 
 # Delete a camera
 async def delete_camera(request):
-    camera_id = int(request.match_info['camera_id'])
-    data = await read_json()
-    data["cameras"] = [camera for camera in data["cameras"] if camera["camera_id"] != camera_id]
-    await write_json(data)
-    return web.json_response({"message": "Camera deleted"})
+    try:
+        camera_id = int(request.match_info['camera_id'])
+        data = await read_json()
+        cameras = data.get("cameras", [])
+        updated_cameras = [camera for camera in cameras if camera_id != camera["camera_id"]]
+
+        if len(updated_cameras) == len(cameras):
+            return web.json_response(f"Camera id {camera_id} not found")
+        
+        data["cameras"] = updated_cameras
+        # Write data
+        await write_json(data)
+        return web.json_response("Camera deleted successfully")
+    except Exception as e:
+        return web.json_response({"error": "Internal server error"}, status=500)
     
 
 

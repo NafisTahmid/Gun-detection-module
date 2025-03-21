@@ -106,36 +106,68 @@
         </div>
     </div>
 
-    <!-- Camera update section -->
-     <div id="camera-update"></div>
+    <div id="edit-camera-container">
+       
+            <h1 class="camera_management_header">Camera Management</h1>
+            <table id="camera_table">
+                <thead>
+                    <tr>
+                        <th>Serial</th>
+                        <th>Address</th>
+                        <th>Type</th>
+                        <th>Status</th>
+                        <th>Edit</th>
+                        <th>Delete</th>
+                    </tr>
+                </thead>
+                <tbody id="table_body">
+                    <!-- Rows will be appended here dynamically -->
+                </tbody>
+            </table>
+        
+    </div>
+
+    <div class="" id="open_edit_form">
+        <h3>Edit Camera</h3>
+        <form action="" id="edit-form">
+            <div class="form-group">
+                <input type="hidden" name="camera_id" id="camera_id">
+            </div>
+            
+            <div class="form-group">
+                <label for="camera_url">Camera URL</label>
+                <input type="text" name="camera_url" id="camera_url">
+            </div>
+        
+            <div class="form-group">
+                <label for="camera_type">Camera Type</label>
+                <input type="text" name="camera_type" id="camera_type">
+            </div>
+        
+            <div class="form-group">
+                <label for="camera_running_status">Camera Running Status</label>
+                <input type="checkbox" name="camera_running_status" id="camera_running_status">
+            </div>
+        
+            <div class="form-group">
+                <label for="threshold">Threshold</label>
+                <input type="text" name="threshold" id="threshold">
+            </div>
+        
+            <div class="form-group">
+                <label for="third_party">Third Party</label>
+                <input type="checkbox" name="third_party" id="third_party">
+            </div>
+        
+            <div class="form-group">
+                <button type="submit" class="submit-btn">Edit Camera</button>
+            </div>
+        </form>
+        
+    </div>
+    
 </body>
 
-<!-- Edit Camera Modal -->
-<div id="editModal" class="modal">
-    <div class="modal-content">
-        <span class="close" onclick="closeEditModal()">&times;</span>
-        <h2>Edit Camera</h2>
-        <form id="editCameraForm">
-            <input type="hidden" id="editCameraId">
-            <label for="editCameraUrl">Camera URL:</label>
-            <input type="text" id="editCameraUrl" required>
-            <label for="editCameraType">Camera Type:</label>
-            <input type="text" id="editCameraType" required>
-            <label for="editCameraStatus">Camera Status:</label>
-            <select id="editCameraStatus">
-                <option value="true">Active</option>
-                <option value="false">Inactive</option>
-            </select>
-            <label for="editThreshold">Threshold:</label>
-            <input type="number" id="editThreshold" required>
-            <label for="editThirdParty">Third Party:</label>
-            <select id="editThirdParty">
-                <option value="true">Yes</option>
-                <option value="false">No</option>
-            </select>
-            <button type="submit">Save Changes</button>
-        </form>
-    </div>
-</div>
+
 
 </html>

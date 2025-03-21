@@ -10,7 +10,7 @@ if getattr(sys, 'frozen', False):
     spec.loader.exec_module(cv2)
     print('is frozen in helper: ',cv2)
     # Check if OpenCV was built with CUDA support
-    if cv2.getBuildInformation().find('CUDA') != -1:
+    if cv2.getBuildInformation().find('CUDA') != -1:            
         print("OpenCV is built with CUDA support.")
     else:
         print("OpenCV is NOT built with CUDA support.")
