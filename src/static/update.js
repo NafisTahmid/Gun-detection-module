@@ -163,7 +163,7 @@ async function fetchCameras() {
             const editButton = document.createElement("button");
             editButton.innerText = "Edit";
             editButton.style.backgroundColor = "#FFFF00";
-            editButton.addEventListener("click", () => openEditForm(camera));
+            editButton.addEventListener("click", () =>  stopCameraAndOpenEditForm(camera));
             row.children[4].appendChild(editButton);
 
             // Delete button
@@ -202,6 +202,24 @@ async function deleteCamera(camera_id) {
             console.error("Error deleting camera: ", error);
             alert("Failed to delete camera. Check the console for details");
         }
+    }
+}
+
+async function stopCameraAndOpenEditForm(camera) {
+    try {
+        // Send a request to stop the camera thread
+        const response = await fetch(`/cameras/${camera.camera_id}/stop`, {
+            method: 'POST',
+        });
+        if (!response.ok) {
+            throw new Error('Failed to stop camera thread');
+        }
+
+        // Once the thread is stopped, open the edit form
+        openEditForm(camera);
+    } catch (error) {
+        console.error('Error stopping camera thread:', error);
+        alert('Failed to stop camera thread. Check the console for details.');
     }
 }
 

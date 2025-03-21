@@ -877,6 +877,26 @@ async def create_camera(request):
     await write_json(data)
     return web.json_response(new_camera, status=201)
 
+
+# Stop camera
+async def stop_camera(request):
+  try:
+      camera_id = int(request.match_info["camera_id"])
+      data = await read_json()
+
+      cameras = data.get("cameras", [])
+      for camera in cameras:
+          if camera["camera_id"] == camera_id:
+              camera["camera_running_status"] = False
+              break
+          else:
+              return web.json_response({"error": "Camera not found"}, status=404)
+      
+      await write_json(data)
+      return web.json_response({"message": "Camera thread stopped successfully"})
+  except Exception as e:
+      return web.json_response({"error": "Internal server error"}, status=500)
+    
 # Update an existing camera
 async def update_camera(request):
     camera_id = int(request.match_info['camera_id'])
@@ -908,7 +928,6 @@ async def delete_camera(request):
         return web.json_response({"error": "Internal server error"}, status=500)
     
 
-
 async def init_app(loop):
     # Create an aiohttp app and set up routes
     app = web.Application()
@@ -929,6 +948,7 @@ async def init_app(loop):
     app.router.add_post('/cameras', create_camera)
     app.router.add_put('/cameras/{camera_id}', update_camera)
     app.router.add_delete('/cameras/{camera_id}', delete_camera)
+    app.router.add_post('/cameras/{camera_id}/stop', stop_camera)
 
     app.cleanup_ctx.append(websocket_manager)
     return app
