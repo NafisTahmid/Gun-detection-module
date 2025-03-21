@@ -13,6 +13,8 @@
 </head>
 
 <body>
+    
+    <div id="overlay"></div>
     <div class="container">
         <header>
             <img src="../static/accelx-logo.png" alt="logo">
@@ -128,7 +130,10 @@
     </div>
 
     <div class="" id="open_edit_form">
-        <h3>Edit Camera</h3>
+        <div class="edit-form-close-container">
+            <h2 class="edit-camera-text">Edit Camera</h2>
+            <button class="form-close-button" onclick="closePopUp()">&#10005;</button>
+        </div>
         <form action="" id="edit-form">
             <div class="form-group">
                 <input type="hidden" name="camera_id" id="camera_id">
@@ -163,8 +168,8 @@
                 <button type="submit" class="submit-btn">Edit Camera</button>
             </div>
         </form>
-        
     </div>
+
     
 </body>
 

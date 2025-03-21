@@ -215,7 +215,13 @@ function openEditForm(camera) {
     document.getElementById("third_party").checked = camera.third_party;
 
     // Show the form
-    document.getElementById("open_edit_form").style.display = "block";
+    const open_edit_form = document.getElementById("open_edit_form");
+    open_edit_form.style.display = "block";
+    open_edit_form.style.top = "50%";
+    open_edit_form.style.transform = "translate(-50%, -50%)";
+
+    let overlay = document.getElementById("overlay");
+    overlay.style.display = "block";
 }
 
 async function editCamera(event) {
@@ -258,11 +264,23 @@ async function editCamera(event) {
         await fetchCameras();
 
         // Reload the page after 1 second to reflect the changes
-        setTimeout(() => location.reload(), 1000);
+        setTimeout(() => location.reload(), 500);
     } catch (error) {
         console.error("Error editing camera: ", error);
         alert("Error editing camera. Check the console for details.");
     }
+}
+
+function closePopUp() {
+    const open_edit_form = document.getElementById("open_edit_form");
+    open_edit_form.style.display = "none";
+    open_edit_form.style.top = "0";
+    open_edit_form.style.transform = "translate(-50%, -50%) scale(0.1)";
+    open_edit_form.style.cursor = "pointer";
+
+    let overlay = document.getElementById("overlay");
+    overlay.style.display = "none";
+
 }
 // Fetch cameras when user clicks a button
 document.getElementById("edit_camera_stats").addEventListener("click", fetchCameras);
