@@ -5,3 +5,4 @@ websockets
 requests
 python-dotenv
 numpy
+opencv-python
