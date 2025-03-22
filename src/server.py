@@ -878,24 +878,41 @@ async def create_camera(request):
     return web.json_response(new_camera, status=201)
 
 
-# Stop camera
 async def stop_camera(request):
-  try:
-      camera_id = int(request.match_info["camera_id"])
-      data = await read_json()
+    try:
+        camera_id = int(request.match_info["camera_id"])  # Ensure camera_id is an integer
+        print(f"Received camera_id: {camera_id}")  # Debugging: Log the received camera_id
 
-      cameras = data.get("cameras", [])
-      for camera in cameras:
-          if camera["camera_id"] == camera_id:
-              camera["camera_running_status"] = False
-              break
-          else:
-              return web.json_response({"error": "Camera not found"}, status=404)
-      
-      await write_json(data)
-      return web.json_response({"message": "Camera thread stopped successfully"})
-  except Exception as e:
-      return web.json_response({"error": "Internal server error"}, status=500)
+        data = await read_json()
+        print(f"Cameras data before update: {data}")  # Debugging: Log the entire cameras data
+
+        cameras = data.get("cameras", [])
+        camera_found = False
+
+        # Find the camera and update its running status
+        for camera in cameras:
+            print(f"Checking camera: {camera}")  # Debugging: Log each camera being checked
+            if int(camera["camera_id"]) == camera_id:
+                print(f"Camera found: {camera}")  # Debugging: Log the found camera
+                camera["camera_running_status"] = False  # Always set to False
+                camera_found = True
+                print(f"Updated camera: {camera}")  # Debugging: Log the updated camera
+                break  # Exit the loop after updating the camera
+
+        # If the camera was not found, return a 404 error
+        if not camera_found:
+            print(f"Camera not found: {camera_id}")  # Debugging: Log the missing camera_id
+            return web.json_response({"error": "Camera not found"}, status=404)
+
+        # Update the JSON file
+        await write_json(data)
+        print(f"Cameras data after update: {data}")  # Debugging: Log the updated cameras data
+
+        return web.json_response({"message": "Camera thread stopped successfully"})
+    except Exception as e:
+        print(f"Error stopping camera: {e}")  # Debugging: Log any exceptions
+        return web.json_response({"error": "Internal server error"}, status=500)
+    
     
 # Update an existing camera
 async def update_camera(request):

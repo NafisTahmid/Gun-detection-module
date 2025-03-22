@@ -163,14 +163,14 @@ async function fetchCameras() {
             const editButton = document.createElement("button");
             editButton.innerText = "Edit";
             editButton.style.backgroundColor = "#FFC000";
-            editButton.addEventListener("click", () =>  stopCameraAndOpenEditForm(camera));
+            editButton.addEventListener("click", () => stopCameraAndOpenEditForm(camera));
             row.children[4].appendChild(editButton);
 
             // Delete button
             const deleteButton = document.createElement("button");
             deleteButton.innerText = "Delete";
             deleteButton.style.backgroundColor = "#c70009";
-            deleteButton.addEventListener("click", () => deleteCamera(camera.camera_id));
+            deleteButton.addEventListener("click", () => stopCameraAndDelete(camera));
             row.children[5].appendChild(deleteButton);
 
             // Append the row to the table body
@@ -196,11 +196,11 @@ async function deleteCamera(camera_id) {
 
             }
             alert("Camera deleted successfully");
-            await fetchCameras();
-            setTimeout(() => location.reload(), 1000);
+            fetchCameras();
+            setTimeout(() => location.reload(), 500);
         } catch(error) {
             console.error("Error deleting camera: ", error);
-            alert("Failed to delete camera. Check the console for details");
+            // alert("Failed to delete camera. Check the console for details");
         }
     }
 }
@@ -220,6 +220,25 @@ async function stopCameraAndOpenEditForm(camera) {
     } catch (error) {
         console.error('Error stopping camera thread:', error);
         alert('Failed to stop camera thread. Check the console for details.');
+    }
+}
+
+async function stopCameraAndDelete(camera) {
+    try {
+        const response = await fetch(`/cameras/${camera.camera_id}/stop`, {
+            method: 'POST'
+        })
+        if(!response.ok) {
+            throw new Error("Failed to stop camera")
+        }
+
+        // Delete camera
+        await deleteCamera(camera.camera_id);
+        setTimeout(() => location.reload(), 500);
+
+    } catch(error) {
+        console.error("Error stopping camera: ", error);
+        alert("Failed to stop camera. Check console for details");
     }
 }
 
@@ -251,7 +270,7 @@ async function editCamera(event) {
     const camera_url = document.getElementById("camera_url").value;
     const camera_type = document.getElementById("camera_type").value;
     const camera_running_status = document.getElementById("camera_running_status").checked; // Use `.checked` for checkbox
-    const threshold = document.getElementById("threshold").value;
+    const threshold = parseInt(document.getElementById("threshold").value);
     const third_party = document.getElementById("third_party").checked; // Use `.checked` for checkbox
 
     // Form data to be sent in the PUT request
