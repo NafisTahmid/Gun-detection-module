@@ -74,9 +74,7 @@ app_directory = os.path.join(user_home, 'acceleye-detection-app')
 app_version = os.getenv("VERSION", "V 1.00")
 env_location = os.path.join(app_directory, ".env")
 load_dotenv(env_location)
-# config_location = os.path.join(app_directory, "server_config.json")
-# config_location = "D://Nafis//gun-detection-module//src//server_config.json"
-config_location = "D://Nafis//Github repository clones//Gun-detection-module//src//server_config.json"
+config_location = "C://Mridul//Accelx//Gun-detection-module//src//server_config.json"
 static_path = os.path.join(pwd, 'static')
 
 # Configuration Constants
@@ -835,7 +833,7 @@ async def on_shutdown(app):
 """New module starts from here"""
 
 # Path to JSON file
-JSON_FILE = "D://Nafis//Github repository clones//Gun-detection-module//src//server_config.json"
+JSON_FILE = "C://Mridul//Accelx//Gun-detection-module//src//server_config.json"
 
 # Helper function to read the JSON file
 async def read_json():
@@ -878,40 +876,39 @@ async def create_camera(request):
     return web.json_response(new_camera, status=201)
 
 
-async def stop_camera(request):
-    try:
-        camera_id = int(request.match_info["camera_id"])  # Ensure camera_id is an integer
-        print(f"Received camera_id: {camera_id}")  # Debugging: Log the received camera_id
+# async def stop_camera(request):
+#     try:
+#         camera_id = int(request.match_info["camera_id"]) 
+#         print(f"Received camera_id: {camera_id}")  
 
-        data = await read_json()
-        print(f"Cameras data before update: {data}")  # Debugging: Log the entire cameras data
+#         data = await read_json()
+#         print(f"Cameras data before update: {data}")  
 
-        cameras = data.get("cameras", [])
-        camera_found = False
+#         cameras = data.get("cameras", [])
+#         camera_found = False
 
-        # Find the camera and update its running status
-        for camera in cameras:
-            print(f"Checking camera: {camera}")  # Debugging: Log each camera being checked
-            if int(camera["camera_id"]) == camera_id:
-                print(f"Camera found: {camera}")  # Debugging: Log the found camera
-                camera["camera_running_status"] = False  # Always set to False
-                camera_found = True
-                print(f"Updated camera: {camera}")  # Debugging: Log the updated camera
-                break  # Exit the loop after updating the camera
+    
+#         for camera in cameras:
+#             print(f"Checking camera: {camera}")
+#             if int(camera["camera_id"]) == camera_id:
+#                 print(f"Camera found: {camera}")  
+#                 camera["camera_running_status"] = False 
+#                 camera_found = True
+#                 print(f"Updated camera: {camera}")  
+#                 break  
 
-        # If the camera was not found, return a 404 error
-        if not camera_found:
-            print(f"Camera not found: {camera_id}")  # Debugging: Log the missing camera_id
-            return web.json_response({"error": "Camera not found"}, status=404)
+#         if not camera_found:
+#             print(f"Camera not found: {camera_id}")  
+#             return web.json_response({"error": "Camera not found"}, status=404)
 
-        # Update the JSON file
-        await write_json(data)
-        print(f"Cameras data after update: {data}")  # Debugging: Log the updated cameras data
+#         # Update the JSON file
+#         await write_json(data)
+#         print(f"Cameras data after update: {data}")  
 
-        return web.json_response({"message": "Camera thread stopped successfully"})
-    except Exception as e:
-        print(f"Error stopping camera: {e}")  # Debugging: Log any exceptions
-        return web.json_response({"error": "Internal server error"}, status=500)
+#         return web.json_response({"message": "Camera thread stopped successfully"})
+#     except Exception as e:
+#         print(f"Error stopping camera: {e}")  
+#         return web.json_response({"error": "Internal server error"}, status=500)
     
     
 # Update an existing camera
@@ -945,6 +942,31 @@ async def delete_camera(request):
         return web.json_response({"error": "Internal server error"}, status=500)
     
 
+camera_processes_lock = asyncio.Lock()
+
+async def stop_camera_thread(request):
+    try:
+        camera_id = int(request.match_info['camera_id'])
+        print(f"Attempting to stop camera thread for camera_id: {camera_id}")
+        print(f"Current camera_processes: {camera_processes}")
+
+        async with camera_processes_lock:
+            if camera_id in camera_processes:
+                camera_processes[camera_id] = False
+                await asyncio.sleep(1) 
+                
+                print(f"Camera thread for camera_id {camera_id} stopped")
+            else:
+                print(f"Camera thread for camera_id {camera_id} not found")
+                return web.json_response({"error": "Camera thread not found"}, status=404)
+
+        return web.json_response({"message": "Camera thread stopped successfully"})
+    except Exception as e:
+        print(f"Error stopping camera thread: {e}")
+        return web.json_response({"error": "Internal server error"}, status=500)
+
+    
+
 async def init_app(loop):
     # Create an aiohttp app and set up routes
     app = web.Application()
@@ -966,6 +988,7 @@ async def init_app(loop):
     app.router.add_put('/cameras/{camera_id}', update_camera)
     app.router.add_delete('/cameras/{camera_id}', delete_camera)
     app.router.add_post('/cameras/{camera_id}/stop', stop_camera)
+    app.router.add_post('/cameras/{camera_id}/stop_thread', stop_camera_thread)
 
     app.cleanup_ctx.append(websocket_manager)
     return app

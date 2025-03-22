@@ -205,21 +205,35 @@ async function deleteCamera(camera_id) {
     }
 }
 
+// async function stopCameraAndOpenEditForm(camera) {
+//     try {
+        
+//         const response = await fetch(`/cameras/${camera.camera_id}/stop`, {
+//             method: 'POST',
+//         });
+//         if (!response.ok) {
+//             throw new Error('Failed to stop camera thread');
+//         }
+
+        
+//         openEditForm(camera);
+//     } catch (error) {
+//         console.error('Error stopping camera thread:', error);
+//         alert('Failed to stop camera thread. Check the console for details.');
+//     }
+// }
 async function stopCameraAndOpenEditForm(camera) {
     try {
-        // Send a request to stop the camera thread
-        const response = await fetch(`/cameras/${camera.camera_id}/stop`, {
-            method: 'POST',
+        const response = await fetch(`/cameras/${camera.camera_id}/stop_thread`, {
+            method: "POST"
         });
         if (!response.ok) {
-            throw new Error('Failed to stop camera thread');
+            throw new Error("Thread stop error");
         }
-
-        // Once the thread is stopped, open the edit form
         openEditForm(camera);
     } catch (error) {
-        console.error('Error stopping camera thread:', error);
-        alert('Failed to stop camera thread. Check the console for details.');
+        alert("Failed to stop camera. Check console for details");
+        console.error("Error: ", error);
     }
 }
 
