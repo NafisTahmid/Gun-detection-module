@@ -140,12 +140,12 @@ async function fetchCameras() {
             
             const activeText = document.createElement("span");
             activeText.innerText = "Active";
-            activeText.style.color = "#336600";
+            activeText.style.color = "#00FF00";
             activeText.style.fontWeight = 700;
 
             const inactiveText = document.createElement("span");
             inactiveText.innerText = "Inactive";
-            inactiveText.style.color = "#993300";
+            inactiveText.style.color = "#FF0000";
             inactiveText.style.fontWeight = 700;
 
             // Add camera data to the row
@@ -162,14 +162,14 @@ async function fetchCameras() {
 
             const editButton = document.createElement("button");
             editButton.innerText = "Edit";
-            editButton.style.backgroundColor = "#FFFF00";
+            editButton.style.backgroundColor = "#FFC000";
             editButton.addEventListener("click", () =>  stopCameraAndOpenEditForm(camera));
             row.children[4].appendChild(editButton);
 
             // Delete button
             const deleteButton = document.createElement("button");
             deleteButton.innerText = "Delete";
-            deleteButton.style.backgroundColor = "#FF0000";
+            deleteButton.style.backgroundColor = "#c70009";
             deleteButton.addEventListener("click", () => deleteCamera(camera.camera_id));
             row.children[5].appendChild(deleteButton);
 

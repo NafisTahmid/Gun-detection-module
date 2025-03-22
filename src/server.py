@@ -76,7 +76,7 @@ env_location = os.path.join(app_directory, ".env")
 load_dotenv(env_location)
 # config_location = os.path.join(app_directory, "server_config.json")
 # config_location = "D://Nafis//gun-detection-module//src//server_config.json"
-config_location = "C://Mridul//Gun-detection-module//src//server_config.json"
+config_location = "D://Nafis//Github repository clones//Gun-detection-module//src//server_config.json"
 static_path = os.path.join(pwd, 'static')
 
 # Configuration Constants
@@ -835,7 +835,7 @@ async def on_shutdown(app):
 """New module starts from here"""
 
 # Path to JSON file
-JSON_FILE = "C://Mridul//Gun-detection-module//src//server_config.json"
+JSON_FILE = "D://Nafis//Github repository clones//Gun-detection-module//src//server_config.json"
 
 # Helper function to read the JSON file
 async def read_json():
