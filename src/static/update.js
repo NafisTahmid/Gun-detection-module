@@ -151,8 +151,8 @@ async function fetchCameras() {
             // Add camera data to the row
             row.innerHTML = `
                 <td>${camera.camera_id}</td>
-                <td>${camera.camera_url}</td>
-                <td>${camera.camera_type}</td>
+                <td>${camera.camera_url.slice(19, 36)}</td>
+                <td>${camera.camera_type.toUpperCase()}</td>
                 <td></td>
                 <td></td>
                 <td></td>

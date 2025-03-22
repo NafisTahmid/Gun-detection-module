@@ -416,13 +416,18 @@ th {
 
 #camera_table_new {
   margin-bottom: 1rem;
-  width: 85%;
+  width: 95%;
   margin: 5rem auto 1.5rem auto;
 }
 
 #camera_table_new th {
   background-color: #172554;
   color: azure;
+  font-family: Cambria, Cochin, Georgia, Times, "Times New Roman", serif;
+}
+
+#camera_table_new td {
+  font-family: Cambria, Cochin, Georgia, Times, "Times New Roman", serif;
 }
 #edit-camera-container {
   background-color: #fff;
@@ -562,7 +567,7 @@ form {
 .edit-camera-label {
   position: absolute;
   top: 110%;
-  left: 27.6%;
+  left: 26.1%;
   background-color: #172554;
   color: azure;
   /* padding: 4px 4px; */
