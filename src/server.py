@@ -908,28 +908,83 @@ async def stop_camera(request):
         return web.json_response({"error": "Internal server error"}, status=500)
     
 
+# async def start_camera(request):
+#     try:
+#         camera_id = int(request.match_info["camera_id"]) 
+#         camera_found = False
+        
+#         data = await read_json()
+#         cameras = data.get("cameras", [])
+#         # Iterate the cameras to find the camera
+#         for camera in cameras:
+#             if int(camera["camera_id"]) == camera_id:
+#                 camera["camera_running_status"] = True
+#                 camera_found = True
+#                 break
+            
+#         if not camera_found:
+#             return web.json_response({"error": "Camera not found"}, status=404)
+            
+#         # Write new data to json file
+#         await write_json(data)
+#         return web.json_response({"message": "Camera turned on"}, status=200) 
+#     except Exception as e:
+#         return web.json_response({"error": "Got an error"}, status=500)
+
 async def start_camera(request):
     try:
-        camera_id = int(request.match_info["camera_id"]) 
-        camera_found = False
-        
+        camera_id = int(request.match_info["camera_id"])
+        await populate_camera_processes()  # Ensure camera_processes is updated
         data = await read_json()
         cameras = data.get("cameras", [])
-        # Iterate the cameras to find the camera
+        camera_found = False
+        selected_camera = None
+        
+        # Find the camera in the list
         for camera in cameras:
             if int(camera["camera_id"]) == camera_id:
-                camera["camera_running_status"] = True
+                selected_camera = camera
                 camera_found = True
                 break
             
         if not camera_found:
             return web.json_response({"error": "Camera not found"}, status=404)
-            
-        # Write new data to json file
-        await write_json(data)
-        return web.json_response({"message": "Camera turned on"}, status=200) 
+
+        async with camera_processes_lock:
+            # If the camera is already running, return a response
+            if camera_id in camera_processes and camera_processes[camera_id]:
+                return web.json_response({"message": "Camera is already running"}, status=200)
+
+            # Mark camera as running
+            camera_processes[camera_id] = True
+            selected_camera["camera_running_status"] = True
+
+            # Write updated data to JSON file
+            await write_json(data)
+
+            # Extract camera details
+            camera_url = selected_camera.get("camera_url", "")
+            cam_type = selected_camera.get("cam_type", "jpeg")
+            abs_diff_threshold = selected_camera.get("threshold", 10)
+
+            # Start the capture_frame function in a new thread
+            capture_queue = thread_queue.Queue(maxsize=MAX_QUEUE_SIZE)
+            thread = threading.Thread(
+                target=capture_frame, 
+                args=(camera_id, cam_type, camera_url, abs_diff_threshold, capture_queue, None),
+                daemon=True
+            )
+            thread.daemon = True
+            thread.start()
+
+            print(f"Camera {camera_id} started successfully.")
+            return web.json_response({"message": "Camera started successfully"}, status=200)
+
+    except ValueError:
+        return web.json_response({"error": "Invalid camera ID"}, status=400)
     except Exception as e:
-        return web.json_response({"error": "Got an error"}, status=500)
+        print(f"Error starting camera {camera_id}: {e}")
+        return web.json_response({"error": "Internal server error"}, status=500)
     
     
 # Update an existing camera
@@ -1015,7 +1070,11 @@ async def stop_camera_thread(request):
                         json_camera["camera_running_status"] = False
                         break
                 await write_json(data)
-                await asyncio.sleep(1)
+                
+                   # Ensure the thread has actually stopped
+                while camera_processes.get(camera_id, True):  
+                    await asyncio.sleep(0.5)
+                
                 print(f"Camera thread for camera_id {camera_id} stopped")
                 return web.json_response({"message": "Camera thread stopped successfully"})
             else:
