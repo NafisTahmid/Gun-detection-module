@@ -986,11 +986,21 @@ async def delete_camera(request):
     except Exception as e:
         return web.json_response({"error": "Camera not found"}, status=404)
 
+
+async def populate_camera_processes():
+    data = await read_json()
+    cameras = data.get("cameras", [])
+    
+    # Populate the dictionary
+    for camera in cameras:
+        camera_processes[camera["camera_id"]] = camera["camera_running_status"]
+    
 camera_processes_lock = asyncio.Lock()
 
 async def stop_camera_thread(request):
     try:
         camera_id = int(request.match_info['camera_id'])
+        await populate_camera_processes()
         print(f"Attempting to stop camera thread for camera_id: {camera_id}")
         print(f"Current camera_processes: {camera_processes}")
         data = await read_json()
@@ -999,21 +1009,24 @@ async def stop_camera_thread(request):
         async with camera_processes_lock:
             if camera_id in camera_processes:
                 camera_processes[camera_id] = False
-                cameras["camera_running_status"] = False
-                await asyncio.sleep(1) 
-                
+                # Turn off camera from .json file
+                for json_camera in cameras:
+                    if json_camera.get("camera_id") == camera_id:
+                        json_camera["camera_running_status"] = False
+                        break
+                await write_json(data)
+                await asyncio.sleep(1)
                 print(f"Camera thread for camera_id {camera_id} stopped")
+                return web.json_response({"message": "Camera thread stopped successfully"})
             else:
                 print(f"Camera thread for camera_id {camera_id} not found")
                 return web.json_response({"error": "Camera thread not found"}, status=404)
 
-        return web.json_response({"message": "Camera thread stopped successfully"})
     except Exception as e:
         print(f"Error stopping camera thread: {e}")
         return web.json_response({"error": "Internal server error"}, status=500)
-
     
-
+    
 async def init_app(loop):
     # Create an aiohttp app and set up routes
     app = web.Application()

@@ -338,7 +338,7 @@ function closePopUp() {
 // Functions to stop and start camera
 async function stopCamera(camera_id) {
     try {
-        const response = await fetch(`/cameras/${camera_id}/stop`, {
+        const response = await fetch(`/cameras/${camera_id}/stop_thread`, {
             method: "POST"
         })
         if(!response.ok) {
@@ -347,7 +347,6 @@ async function stopCamera(camera_id) {
         console.log("Camera stopped");
         setTimeout(() => location.reload(), 200);
     } catch(error) {
-        alert("Failed to stop camera");
         console.error("Error message: ", error);
     }
 }
