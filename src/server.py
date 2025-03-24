@@ -933,35 +933,58 @@ async def start_camera(request):
     
     
 # Update an existing camera
+# async def update_camera(request):
+#     camera_id = int(request.match_info['camera_id'])
+#     updated_data = await request.json()
+#     data = await read_json()
+#     for camera in data["cameras"]:
+#         if camera["camera_id"] == camera_id:
+#             camera.update(updated_data)
+#             await write_json(data)
+#             return web.json_response(camera)
+#     return web.json_response({"error": "Camera not found"}, status=404)
+
 async def update_camera(request):
-    camera_id = int(request.match_info['camera_id'])
-    updated_data = await request.json()
-    data = await read_json()
-    for camera in data["cameras"]:
-        if camera["camera_id"] == camera_id:
-            camera.update(updated_data)
-            await write_json(data)
-            return web.json_response(camera)
-    return web.json_response({"error": "Camera not found"}, status=404)
+    try:
+        camera_id = int(request.match_info["camera_id"])
+        updated_data = await request.json()
+        # Updated data values
+        camera_url = updated_data["camera_url"]
+        print("Camera url: ", camera_url)
+        camera_type = updated_data["camera_type"]
+        camera_running_status = updated_data["camera_running_status"]
+        threshold = updated_data["threshold"]
+        third_party = updated_data["third_party"]
+        helper.set_camera_config(camera_url, camera_id, camera_type, camera_running_status, threshold,third_party, filename=config_location)
+        return web.json_response({"message": "Camera updated successfully"}, status=200)
+    except Exception as e:
+        return web.json_response({"error": "Camera not found"}, status=404)
 
 # Delete a camera
+# async def delete_camera(request):
+#     try:
+#         camera_id = int(request.match_info['camera_id'])
+#         data = await read_json()
+#         cameras = data.get("cameras", [])
+#         updated_cameras = [camera for camera in cameras if camera_id != camera["camera_id"]]
+
+#         if len(updated_cameras) == len(cameras):
+#             return web.json_response(f"Camera id {camera_id} not found")
+        
+#         data["cameras"] = updated_cameras
+#         # Write data
+#         await write_json(data)
+#         return web.json_response("Camera deleted successfully")
+#     except Exception as e:
+#         return web.json_response({"error": "Internal server error"}, status=500)
+
 async def delete_camera(request):
     try:
-        camera_id = int(request.match_info['camera_id'])
-        data = await read_json()
-        cameras = data.get("cameras", [])
-        updated_cameras = [camera for camera in cameras if camera_id != camera["camera_id"]]
-
-        if len(updated_cameras) == len(cameras):
-            return web.json_response(f"Camera id {camera_id} not found")
-        
-        data["cameras"] = updated_cameras
-        # Write data
-        await write_json(data)
-        return web.json_response("Camera deleted successfully")
+        camera_id = int(request.match_info["camera_id"])
+        helper.unset_camera_config(camera_id, config_location)
+        return web.json_response({"message": "Camera deleted successfully"}, status=200)
     except Exception as e:
-        return web.json_response({"error": "Internal server error"}, status=500)
-    
+        return web.json_response({"error": "Camera not found"}, status=404)
 
 camera_processes_lock = asyncio.Lock()
 

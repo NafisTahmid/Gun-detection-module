@@ -320,7 +320,6 @@ async function editCamera(event) {
         setTimeout(() => location.reload(), 500);
     } catch (error) {
         console.error("Error editing camera: ", error);
-        alert("Error editing camera. Check the console for details.");
     }
 }
 
@@ -339,7 +338,7 @@ function closePopUp() {
 // Functions to stop and start camera
 async function stopCamera(camera_id) {
     try {
-        const response = await fetch(`/cameras/${camera_id}/stop_thread`, {
+        const response = await fetch(`/cameras/${camera_id}/stop`, {
             method: "POST"
         })
         if(!response.ok) {

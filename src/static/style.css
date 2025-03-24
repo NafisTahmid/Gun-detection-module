@@ -526,7 +526,7 @@ form {
 
 .form-group input:focus {
   outline: none;
-  border-color: #4caf50;
+  border-color: yellow;
   background-color: #fff;
 }
 
@@ -537,7 +537,7 @@ form {
 }
 
 .form-group input[type="checkbox"]:checked {
-  background-color: #4caf50;
+  background-color: yellow;
 }
 
 /* Button Styling */
