@@ -24,7 +24,11 @@ from signal_handler import SignalHandler
 import subprocess
 import re
 from dotenv import load_dotenv, set_key
+# Import logger
+from logger_config import setup_logger
 
+# Initialize the logger
+logger = setup_logger(log_file="new_log.log")
 
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 
@@ -842,29 +846,31 @@ async def read_json():
             with open(JSON_FILE, 'r') as file:
                 return json.load(file)
         else:
-            print(f"JSON file not found at {JSON_FILE}")
-            return {"cameras": []}  # Return an empty list if the file doesn't exist
+            logger.error(f"JSON file not found at {JSON_FILE}")
+            return {"cameras": []}  
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON file: {e}")
-        return {"cameras": []}  # Return an empty list if the JSON is invalid
+        return {"cameras": []}  
     except Exception as e:
-        print(f"Unexpected error reading JSON file: {e}")
-        return {"cameras": []}  # Return an empty list for any other errors
+        logger.error(f"Unexpected error reading JSON file: {e}")
+        return {"cameras": []}  
 
 
 # Helper function to write to the JSON file
 async def write_json(data):
     with open(JSON_FILE, 'w') as file:
         json.dump(data, file, indent=4)
+    logger.info("Json file written")
 
 # Endpoint to fetch cameras
 async def get_cameras(request):
     try:
         data = await read_json()
         cameras = data.get("cameras", [])  # Use .get() to avoid KeyError if "cameras" is missing
+        logger.debug("Retrived all cameras")
         return web.json_response(cameras)
     except Exception as e:
-        print(f"Error in get_cameras endpoint: {e}")
+        logger.error(f"Error in get_cameras endpoint: {e}")
         return web.json_response({"error": "Internal Server Error"}, status=500)
 
 # Add a new camera
@@ -877,12 +883,13 @@ async def create_camera(request):
 
 
 async def stop_camera(request):
+    logger.info("Stop camera function clicked")
     try:
         camera_id = int(request.match_info["camera_id"]) 
-        print(f"Received camera_id: {camera_id}")  
+        logger.debug(f"Received camera_id: {camera_id}")  
 
         data = await read_json()
-        print(f"Cameras data before update: {data}")  
+        logger.debug(f"Cameras data before update: {data}")  
 
         cameras = data.get("cameras", [])
         camera_found = False
@@ -948,11 +955,13 @@ async def start_camera(request):
                 break
             
         if not camera_found:
+            logger.error(f"Camera id:{camera_id} not found")
             return web.json_response({"error": "Camera not found"}, status=404)
 
         async with camera_processes_lock:
             # If the camera is already running, return a response
             if camera_id in camera_processes and camera_processes[camera_id]:
+                logger.info(f"Camera id:{camera_id} is already running")
                 return web.json_response({"message": "Camera is already running"}, status=200)
 
             # Mark camera as running
@@ -960,30 +969,39 @@ async def start_camera(request):
             selected_camera["camera_running_status"] = True
 
             # Write updated data to JSON file
-            await write_json(data)
+            # await write_json(data)
+            
+            camera_id = selected_camera["camera_id"]
+            camera_url = selected_camera["camera_url"]
+            camera_type = selected_camera["camera_type"]
+            camera_running_status = selected_camera["camera_running_status"]
+            threshold = selected_camera["threshold"]
+            third_party = selected_camera["third_party"]
+            helper.set_camera_config(camera_url, camera_id, camera_type, camera_running_status, threshold, third_party, filename=config_location)
 
             # Extract camera details
-            camera_url = selected_camera.get("camera_url", "")
-            cam_type = selected_camera.get("cam_type", "jpeg")
+            # camera_url = selected_camera.get("camera_url", "")
+            # cam_type = selected_camera.get("cam_type", "jpeg")
             abs_diff_threshold = selected_camera.get("threshold", 10)
 
             # Start the capture_frame function in a new thread
             capture_queue = thread_queue.Queue(maxsize=MAX_QUEUE_SIZE)
             thread = threading.Thread(
                 target=capture_frame, 
-                args=(camera_id, cam_type, camera_url, abs_diff_threshold, capture_queue, None),
+                args=(camera_id, camera_type, camera_url, abs_diff_threshold, capture_queue, None),
                 daemon=True
             )
             thread.daemon = True
             thread.start()
 
-            print(f"Camera {camera_id} started successfully.")
+            logger.info(f"Camera:{camera_id} started successfully.")
             return web.json_response({"message": "Camera started successfully"}, status=200)
 
     except ValueError:
+        logger.error(f"Invalid camera id: {camera_id}")
         return web.json_response({"error": "Invalid camera ID"}, status=400)
     except Exception as e:
-        print(f"Error starting camera {camera_id}: {e}")
+        logger.error(f"Error starting camera {camera_id}: {e}")
         return web.json_response({"error": "Internal server error"}, status=500)
     
     
@@ -1008,9 +1026,10 @@ async def update_camera(request):
         print("Camera url: ", camera_url)
         camera_type = updated_data["camera_type"]
         camera_running_status = updated_data["camera_running_status"]
-        threshold = updated_data["threshold"]
+        threshold = float(updated_data["threshold"])
         third_party = updated_data["third_party"]
         helper.set_camera_config(camera_url, camera_id, camera_type, camera_running_status, threshold,third_party, filename=config_location)
+        logger.info(f"Camera id:{camera_id} updated successfully")
         return web.json_response({"message": "Camera updated successfully"}, status=200)
     except Exception as e:
         return web.json_response({"error": "Camera not found"}, status=404)
@@ -1037,8 +1056,10 @@ async def delete_camera(request):
     try:
         camera_id = int(request.match_info["camera_id"])
         helper.unset_camera_config(camera_id, config_location)
+        logger.debug(f"Camera id: {camera_id} deleted successfully")
         return web.json_response({"message": "Camera deleted successfully"}, status=200)
     except Exception as e:
+        logger.error(f"Error: camera id: {camera_id} not found")
         return web.json_response({"error": "Camera not found"}, status=404)
 
 
@@ -1049,15 +1070,17 @@ async def populate_camera_processes():
     # Populate the dictionary
     for camera in cameras:
         camera_processes[camera["camera_id"]] = camera["camera_running_status"]
+    logger.info("All camera ids populated in camera_process dictionary")
     
 camera_processes_lock = asyncio.Lock()
 
 async def stop_camera_thread(request):
+    logger.info("stop_camera_thread function clicked")
     try:
         camera_id = int(request.match_info['camera_id'])
         await populate_camera_processes()
-        print(f"Attempting to stop camera thread for camera_id: {camera_id}")
-        print(f"Current camera_processes: {camera_processes}")
+        logger.debug(f"Attempting to stop camera thread for camera_id: {camera_id}")
+        logger.debug(f"Current camera_processes: {camera_processes}")
         data = await read_json()
         cameras = data.get("cameras", [])
 
@@ -1068,21 +1091,31 @@ async def stop_camera_thread(request):
                 for json_camera in cameras:
                     if json_camera.get("camera_id") == camera_id:
                         json_camera["camera_running_status"] = False
+                        
+                
+                # await write_json(data)
+                        camera_url = json_camera["camera_url"]
+                        camera_id = json_camera["camera_id"]
+                        camera_type = json_camera["camera_type"]
+                        camera_running_status = json_camera["camera_running_status"]
+                        third_party = json_camera["third_party"]
+                        logger.info(f"Stopped capturing for camera {camera_id}.")
+                        abs_diff_threshold = float(json_camera.get('threshold', 5.0))
+                        helper.set_camera_config(camera_url, camera_id, camera_type, camera_running_status, abs_diff_threshold, third_party, filename=config_location)
                         break
-                await write_json(data)
                 
                    # Ensure the thread has actually stopped
                 while camera_processes.get(camera_id, True):  
                     await asyncio.sleep(0.5)
                 
-                print(f"Camera thread for camera_id {camera_id} stopped")
+                logger.info(f"Camera thread for camera_id {camera_id} stopped")
                 return web.json_response({"message": "Camera thread stopped successfully"})
             else:
-                print(f"Camera thread for camera_id {camera_id} not found")
+                logger.error(f"Camera thread for camera_id {camera_id} not found")
                 return web.json_response({"error": "Camera thread not found"}, status=404)
 
     except Exception as e:
-        print(f"Error stopping camera thread: {e}")
+        logger.error(f"Error stopping camera thread: {e}")
         return web.json_response({"error": "Internal server error"}, status=500)
     
     

@@ -286,7 +286,7 @@ async function editCamera(event) {
     const camera_url = document.getElementById("camera_url").value;
     const camera_type = document.getElementById("camera_type").value;
     const camera_running_status = document.getElementById("camera_running_status").checked; // Use `.checked` for checkbox
-    const threshold = parseInt(document.getElementById("threshold").value);
+    const threshold = parseFloat(document.getElementById("threshold").value);
     const third_party = document.getElementById("third_party").checked; // Use `.checked` for checkbox
 
     // Form data to be sent in the PUT request
