@@ -341,6 +341,10 @@ form #cancel_change_server_button {
   margin-top: 20px; /* Optional: Add spacing above the button */
 }
 
+.hero-button {
+  margin: 1rem auto;
+}
+
 /* Spinner styles specifically for the loading state of the button */
 #loadBranchesBtn.loading {
   position: relative;
@@ -416,7 +420,7 @@ th {
 
 #camera_table_new {
   margin-bottom: 1rem;
-  width: 95%;
+  max-width: 95%;
   margin: 5rem auto 1.5rem auto;
 }
 
@@ -566,7 +570,7 @@ form {
 
 .edit-camera-label {
   position: absolute;
-  top: 110%;
+  top: 124%;
   left: 26.1%;
   background-color: #172554;
   color: azure;
@@ -589,6 +593,11 @@ form {
   padding: 1rem 1rem 0 0.4rem;
 }
 
+.table-responsive {
+  overflow-x: auto; /* Enables horizontal scrolling */
+  -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
+}
+
 /* Spinner animation */
 @keyframes spin {
   from {
@@ -607,5 +616,23 @@ form {
 
   .form-group input {
     font-size: 16px;
+  }
+  .edit-camera-label {
+    position: absolute;
+    top: 192%;
+    left: 26.1%;
+    background-color: #172554;
+    text-align: center;
+    color: azure;
+    /* padding: 4px 4px; */
+    font-family: Cambria, Cochin, Georgia, Times, "Times New Roman", serif;
+    border-radius: 4px 4px 0 0;
+    font-size: 1.2em;
+    font-weight: bold;
+    max-width: 33%;
+    margin-left: 27px;
+    height: 63px;
+    margin-top: 1rem;
+    /* bottom: 0rem; */
   }
 }

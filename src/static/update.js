@@ -165,7 +165,7 @@ async function fetchCameras() {
             editButton.innerText = "Edit";
             editButton.style.backgroundColor = (camera.camera_running_status ?  "#ffffcc" : "#FFC000");
             editButton.disabled = camera.camera_running_status ? true : false;
-            editButton.addEventListener("click", () => openEditForm(camera));
+            editButton.addEventListener("click", () => stopCameraAndOpenEditForm(camera));
             row.children[4].appendChild(editButton);
 
             // Delete button
@@ -173,7 +173,7 @@ async function fetchCameras() {
             deleteButton.innerText = "Delete";
             deleteButton.style.backgroundColor = (camera.camera_running_status ? "#ffb3b3" : "#c70009");
             deleteButton.disabled = camera.camera_running_status ? true : false;
-            deleteButton.addEventListener("click", () => deleteCamera(camera.camera_id));
+            deleteButton.addEventListener("click", () => stopCameraAndDelete(camera.camera_id));
             row.children[5].appendChild(deleteButton);
 
             // Stop camera button

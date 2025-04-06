@@ -1,116 +1,130 @@
 <!DOCTYPE html>
 <html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Server Status</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <script src="/static/main.js" defer></script>
-    <script src="/static/utils.js" defer></script>
-    <script src="/static/camera.js" defer></script>
-    <script src="/static/update.js" defer></script>
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Server Status</title>
+        <link rel="stylesheet" href="/static/style.css">
+        <script src="/static/main.js" defer></script>
+        <script src="/static/utils.js" defer></script>
+        <script src="/static/camera.js" defer></script>
+        <script src="/static/update.js" defer></script>
 
-<body>
-    
-    <div id="overlay"></div>
-    <div class="container">
-        <header>
-            <img src="../static/accelx-logo.png" alt="logo">
-            <a href="https://acceleye.com">AccelEye</a>
-        </header>
-        <div class="innerContainer">
+        <!-- <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-SgOJa3DmI69IUzQ2PVdRZhwQ+dy64/BUtbMJw1MZ8t5HZApcHrRKUc4W0kG879m7" crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.5/dist/js/bootstrap.bundle.min.js" integrity="sha384-k6d4wzSIapyDyv1kpU366/PK5hCdSbCRGRCMv+eplOQJWyd1fbcAu9OCUj5zNLiq" crossorigin="anonymous" defer></script> -->
+    </head>
 
-            <h1>Video Server Fixed ID: <b>{{ fixed_vs_server }}</b></h1>
-            <div class="section_ip">
-                <p>IP Address: {{ ip_address }}</p>
-                <p>Current Time: <span id="current_time">{{ current_time }}</span></p>
-            </div>
+    <body>
 
-            <div class="section">
-                <div class="tag-container">
-                    <h4>Camera Status</h4>
+        <div id="overlay"></div>
+        <div class="container">
+            <header>
+                <img src="../static/accelx-logo.png" alt="logo">
+                <a href="https://acceleye.com">AccelEye</a>
+            </header>
+            <div class="innerContainer">
+
+                <h1>Video Server Fixed ID: <b>{{ fixed_vs_server }}</b></h1>
+                <div class="section_ip">
+                    <p>IP Address: {{ ip_address }}</p>
+                    <p>Current Time: <span id="current_time">{{ current_time
+                            }}</span></p>
                 </div>
-                <table id="camera_table">
-                    <thead>
-                        <tr>
-                            <th>Serial</th>
-                            <th>Address</th>
-                            <th>Type</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <!-- Data will be populated here -->
-                    </tbody>
-                </table>
-                <p id="error_message"></p>
-            </div>
 
-            {% if video_server_status %}
-            <div class="video-server-status" id="video_server_status">
-                <p>{{ video_server_status }}</p>
-            </div>
-            {% endif %}
-
-            <div id="button-cluster">
-                <button id="restart_server_button" onclick="handleRestartClick()">Restart Server</button>
-                <button id="change_server_button" onclick="showForm()">Change Video Server</button>
-                <button id="edit_camera_stats" style="background-color: #A52A2A" onclick="fetchCameras()">Edit camera stats</button>
-            </div>
-            <form id="change_server_form" action="/" method="post" onsubmit="submitForm(event)">
-                <div class="input-group">
-                    <label for="video_server_id">Enter Video Server ID</label>
-                    <input type="text" id="video_server_id" name="video_server_id" required>
+                <div class="section table-responsive">
+                    <div class="tag-container">
+                        <h4>Camera Status</h4>
+                    </div>
+                    <table id="camera_table">
+                        <thead>
+                            <tr>
+                                <th>Serial</th>
+                                <th>Address</th>
+                                <th>Type</th>
+                                <th>Status</th>
+                                <!-- Could add more table cells here -->
+                                <th>Edit</th>
+                                <th>Delete</th>
+                                <th>Camera ON/OFF</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                    <p id="error_message"></p>
                 </div>
-                <button type="submit">Submit</button>
-                <button id="cancel_change_server_button" onclick="hideForm()">Cancel</button>
-            </form>
-        </div>
-    </div>
 
-    <!-- Updates Section (Separate Container) -->
-    <div class="container">
-        <div class="innerContainer">
-            <div class="section">
-                <h4>Version Control</h4>
-                <div class="button-container">
-                    <button id="loadBranchesBtn">Check For Updates</button>
+                {% if video_server_status %}
+                <div class="video-server-status" id="video_server_status">
+                    <p>{{ video_server_status }}</p>
                 </div>
-                <table id="branchTable" style="display: none;">
-                    <thead>
-                        <tr>
-                            <th>Server Type</th>
-                            <th>Version</th>
-                            <th>Created At</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody id="branchTableBody"></tbody>
-                </table>
-                <p id="errorMessage"></p>
-                <p id="install_status"></p>
+                {% endif %}
+
+                <div id="button-cluster">
+                    <button id="restart_server_button" class="hero-button"
+                        onclick="handleRestartClick()">Restart Server</button>
+                    <button id="change_server_button" class="hero-button"
+                        onclick="showForm()">Change Video Server</button>
+                    <!-- <button id="edit_camera_stats" class="hero-button"
+                        style="background-color: #A52A2A"
+                        onclick="fetchCameras()">Edit camera stats</button> -->
+                </div>
+                <form id="change_server_form" action="/" method="post"
+                    onsubmit="submitForm(event)">
+                    <div class="input-group">
+                        <label for="video_server_id">Enter Video Server
+                            ID</label>
+                        <input type="text" id="video_server_id"
+                            name="video_server_id" required>
+                    </div>
+                    <button type="submit">Submit</button>
+                    <button id="cancel_change_server_button"
+                        onclick="hideForm()">Cancel</button>
+                </form>
             </div>
         </div>
-    </div>
 
-
-
-    <!-- Toast Container -->
-    <div id="toast-container"></div>
-
-    <!-- Loading Section -->
-    <div id="loading_overlay" class="loading-overlay">
-        <div class="loading-content">
-            <div class="loading-spinner"></div>
-            <p id="loading_message">Restarting... Please wait.</p>
+        <!-- Updates Section (Separate Container) -->
+        <div class="container">
+            <div class="innerContainer">
+                <div class="section">
+                    <h4>Version Control</h4>
+                    <div class="button-container">
+                        <button id="loadBranchesBtn">Check For Updates</button>
+                    </div>
+                    <table id="branchTable" style="display: none;">
+                        <thead>
+                            <tr>
+                                <th>Server Type</th>
+                                <th>Version</th>
+                                <th>Created At</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="branchTableBody"></tbody>
+                    </table>
+                    <p id="errorMessage"></p>
+                    <p id="install_status"></p>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <div id="edit-camera-container">
+        <!-- Toast Container -->
+        <div id="toast-container"></div>
+
+        <!-- Loading Section -->
+        <div id="loading_overlay" class="loading-overlay">
+            <div class="loading-content">
+                <div class="loading-spinner"></div>
+                <p id="loading_message">Restarting... Please wait.</p>
+            </div>
+        </div>
+
+        <div id="edit-camera-container" class="table-responsive">
             <div class="edit-camera-label">
-                <h1 class="camera_management_header">Camera Management</h1>
+                <h1 class="camera_management_header ">Camera Management</h1>
             </div>
             <table id="camera_table_new">
                 <thead>
@@ -128,53 +142,53 @@
                     <!-- Rows will be appended here dynamically -->
                 </tbody>
             </table>
-        
-    </div>
 
-    <div class="" id="open_edit_form">
-        <div class="edit-form-close-container">
-            <h2 class="edit-camera-text">Edit Camera</h2>
-            <button class="form-close-button" onclick="closePopUp()">&#10005;</button>
         </div>
-        <form action="" id="edit-form">
-            <div class="form-group">
-                <input type="hidden" name="camera_id" id="camera_id">
-            </div>
-            
-            <div class="form-group">
-                <label for="camera_url">Camera URL</label>
-                <input type="text" name="camera_url" id="camera_url">
-            </div>
-        
-            <div class="form-group">
-                <label for="camera_type">Camera Type</label>
-                <input type="text" name="camera_type" id="camera_type">
-            </div>
-        
-            <div class="form-group">
-                <label for="camera_running_status">Camera Running Status</label>
-                <input type="checkbox" name="camera_running_status" id="camera_running_status">
-            </div>
-        
-            <div class="form-group">
-                <label for="threshold">Threshold</label>
-                <input type="text" name="threshold" id="threshold">
-            </div>
-        
-            <div class="form-group">
-                <label for="third_party">Third Party</label>
-                <input type="checkbox" name="third_party" id="third_party">
-            </div>
-        
-            <div class="form-group">
-                <button type="submit" class="submit-btn">Update</button>
-            </div>
-        </form>
-    </div>
 
-    
-</body>
+        <div class id="open_edit_form">
+            <div class="edit-form-close-container">
+                <h2 class="edit-camera-text">Edit Camera</h2>
+                <button class="form-close-button"
+                    onclick="closePopUp()">&#10005;</button>
+            </div>
+            <form action id="edit-form">
+                <div class="form-group">
+                    <input type="hidden" name="camera_id" id="camera_id">
+                </div>
 
+                <div class="form-group">
+                    <label for="camera_url">Camera URL</label>
+                    <input type="text" name="camera_url" id="camera_url">
+                </div>
 
+                <div class="form-group">
+                    <label for="camera_type">Camera Type</label>
+                    <input type="text" name="camera_type" id="camera_type">
+                </div>
+
+                <div class="form-group">
+                    <label for="camera_running_status">Camera Running
+                        Status</label>
+                    <input type="checkbox" name="camera_running_status"
+                        id="camera_running_status">
+                </div>
+
+                <div class="form-group">
+                    <label for="threshold">Threshold</label>
+                    <input type="text" name="threshold" id="threshold">
+                </div>
+
+                <div class="form-group">
+                    <label for="third_party">Third Party</label>
+                    <input type="checkbox" name="third_party" id="third_party">
+                </div>
+
+                <div class="form-group">
+                    <button type="submit" class="submit-btn">Update</button>
+                </div>
+            </form>
+        </div>
+
+    </body>
 
 </html>
