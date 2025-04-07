@@ -43,7 +43,9 @@ load_dotenv()
 user_home = os.getenv("HOME_URL", "/home/root")
 app_directory = os.path.join(user_home, 'acceleye-detection-app')
 pwd = os.path.dirname(os.path.abspath(__file__))
-config_location = os.path.join(app_directory, "server_config.json")
+# config_location = os.path.join(app_directory, "server_config.json")
+# Tested config_location
+config_location = os.path.join("D://Nafis//Github repository clones//Gun-detection-module//src//server_config.json", "server_config.json")
 
 base_uri = os.getenv("URI","https://api.accelx.net/gd_apidev/")
 cam_check_url_save = base_uri + "camera/checkcam-url-images/"
@@ -239,3 +241,40 @@ async def reset_server():
         return f"An error occurred: {str(e)}"
 
 
+"""Updated helper code"""
+async def reset_server_updated():
+    """Reset server configuration without sudo"""
+    try:
+        if os.path.exists(config_location):
+            os.remove(config_location)  # Direct file deletion
+            return "Server configuration reset successfully."
+        return "Config file not found"
+    except Exception as e:
+        return f"Reset error: {str(e)}"
+
+async def restart_service_updated():
+    """Proper server restart for local development"""
+    try:
+        # Load latest .env variables
+        load_dotenv(override=True)
+        
+        # Get current Python and script path
+        python = sys.executable
+        script = os.path.abspath("D://Nafis//Github repository clones//Gun-detection-module//src//server.py")  # Adjust if needed
+        
+            # Schedule current process exit
+        os.kill(os.getpid(), signal.SIGTERM)
+        
+        # Start new process
+        new_process = await asyncio.create_subprocess_exec(
+            python, script,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            stdin=asyncio.subprocess.DEVNULL
+        )
+        
+    
+        
+        return "Server restart initiated"
+    except Exception as e:
+        raise Exception(f"Restart failed: {str(e)}")

@@ -25,7 +25,7 @@
             </header>
             <div class="innerContainer">
 
-                <h1>Video Server Fixed ID: <b>{{ fixed_vs_server }}</b></h1>
+                <h1 class="heading-text">Video Server Fixed ID: <b>{{ fixed_vs_server }}</b></h1>
                 <div class="section_ip">
                     <p>IP Address: {{ ip_address }}</p>
                     <p>Current Time: <span id="current_time">{{ current_time
@@ -64,7 +64,7 @@
 
                 <div id="button-cluster">
                     <button id="restart_server_button" class="hero-button"
-                        onclick="handleRestartClick()">Restart Server</button>
+                        onclick="handleRestartClickUpdated()">Restart Server</button>
                     <button id="change_server_button" class="hero-button"
                         onclick="showForm()">Change Video Server</button>
                     <!-- <button id="edit_camera_stats" class="hero-button"

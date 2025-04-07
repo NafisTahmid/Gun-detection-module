@@ -137,7 +137,7 @@ function handleRestartClick(factory_reset = 0) {
     (async function () {
         try {
             const request_data = { trigger: factory_reset }
-            const response = await fetch('/restart_server', {
+            const response = await fetch('/restart_server_updated', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(request_data)
@@ -171,6 +171,8 @@ function handleRestartClick(factory_reset = 0) {
                 };
 
                 waitForServer();
+                // New code
+                window.location.reload();
             } else {
                 alert('Failed to restart server: ' + result.message);
                 loadingOverlay.style.display = 'none'; // Hide loading overlay if restart fails
@@ -182,4 +184,39 @@ function handleRestartClick(factory_reset = 0) {
             loadingOverlay.style.opacity = '0';
         }
     })();
+}
+
+async function handleRestartClickUpdated(factory_reset = 0) {
+    const loadingOverlay = document.getElementById('loading_overlay');
+    loadingOverlay.style.display = 'flex';
+    
+    try {
+        const response = await fetch('/restart_server_updated', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ trigger: factory_reset })
+        });
+        
+        const result = await response.json();
+        
+        if (result.status === 'success') {
+            console.log("New server name:", result.server_name);
+            // Simple 5-second countdown
+            let seconds = 5;
+            const timer = setInterval(() => {
+                console.log(`Reloading in ${seconds--}s...`);
+                if (seconds < 0) {
+                    clearInterval(timer);
+                    window.location.reload(true);
+                }
+            }, 1000);
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        console.error("Restart error:", error);
+        alert("Restart failed: " + error.message);
+    } finally {
+        loadingOverlay.style.display = 'none';
+    }
 }

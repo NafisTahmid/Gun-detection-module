@@ -73,7 +73,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const editButtonCell = document.createElement("td");
                 const editButton = document.createElement("button");
                 editButton.innerText = "Edit";
-                editButton.style.backgroundColor = (camera.camera_running_status ?  "#ffffcc" : "#FFC000");
+                // #FFFFCC
+                editButton.style.backgroundColor = (camera.camera_running_status ?  "#F0E68C" : "orange");
                 editButton.disabled = camera.camera_running_status ? true : false;
                 editButton.addEventListener("click", () => openEditForm(camera));
                 editButtonCell.appendChild(editButton);
@@ -83,7 +84,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const deleteButtonCell = document.createElement("td");
                 const deleteButton = document.createElement("button");
                 deleteButton.innerText = "Delete";
-                deleteButton.style.backgroundColor = (camera.camera_running_status ? "#ffb3b3" : "#c70009");
+                // #FFB3B3
+                deleteButton.style.backgroundColor = (camera.camera_running_status ? "#EADDCA" : "brown");
+                // deleteButton.style.backgroundColor = "brown";
                 deleteButton.disabled = camera.camera_running_status ? true : false;
                 deleteButton.addEventListener("click", () => deleteCamera(camera.camera_id));
                 deleteButtonCell.appendChild(deleteButton);
@@ -93,13 +96,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const cameraToggleButtonCell = document.createElement("td");
 
                 const stopCameraButton = document.createElement("button");
-                stopCameraButton.style.backgroundColor = "#c70009";
+                stopCameraButton.style.backgroundColor = "brown";
                 stopCameraButton.innerText = "Stop camera";
                 stopCameraButton.addEventListener("click", () => stopCamera(camera.camera_id));
     
                 // Start camera button
                 const startCameraButton = document.createElement("button");
-                startCameraButton.style.backgroundColor = "#32de84";
+                startCameraButton.style.backgroundColor = "green";
                 startCameraButton.innerText = "start camera"
                 startCameraButton.addEventListener("click", () => startCamera(camera.camera_id));
                
@@ -176,8 +179,12 @@ function openEditForm(camera) {
     open_edit_form.style.top = "50%";
     open_edit_form.style.transform = "translate(-50%, -50%)";
 
+    // Appending new codes
+    open_edit_form.style.over
+
     let overlay = document.getElementById("overlay");
     overlay.style.display = "block";
+  
 }
 
 async function editCamera(event) {
@@ -215,9 +222,6 @@ async function editCamera(event) {
         if (!response.ok) {
             throw new Error("API call failed");
         }
-
-       
-
         // Reload the page after 1 second to reflect the changes
         setTimeout(() => location.reload(), 500);
     } catch (error) {
@@ -226,6 +230,11 @@ async function editCamera(event) {
 }
 
 function closePopUp() {
+    closeModal();
+
+}
+// Function to close modal
+function closeModal() {
     const open_edit_form = document.getElementById("open_edit_form");
     open_edit_form.style.display = "none";
     open_edit_form.style.top = "0";
@@ -234,7 +243,6 @@ function closePopUp() {
 
     let overlay = document.getElementById("overlay");
     overlay.style.display = "none";
-
 }
 
 async function stopCamera(camera_id) {
@@ -270,3 +278,4 @@ async function startCamera(camera_id) {
 
 // Example of calling openEditForm when an edit button is clicked
 document.getElementById("edit-form").addEventListener("submit", editCamera);
+document.getElementById("overlay").addEventListener("click", closeModal);

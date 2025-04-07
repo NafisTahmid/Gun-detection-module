@@ -367,7 +367,7 @@ async function startCamera(camera_id) {
     }
 }
 // Fetch cameras when user clicks a button
-document.getElementById("edit_camera_stats").addEventListener("click", fetchCameras);
+// document.getElementById("edit_camera_stats").addEventListener("click", fetchCameras);
 // Example of calling openEditForm when an edit button is clicked
 document.getElementById("edit-form").addEventListener("submit", editCamera);
 

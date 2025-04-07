@@ -598,6 +598,11 @@ form {
   -webkit-overflow-scrolling: touch; /* Smooth scroll on iOS */
 }
 
+/* Experimenting modal codes */
+.body-no-scroll {
+  overflow-x: hidden !important;
+}
+
 /* Spinner animation */
 @keyframes spin {
   from {
@@ -608,7 +613,27 @@ form {
   }
 }
 
-@media (max-width: 600px) {
+@media (max-width: 576px) {
+  header img {
+    height: 30px;
+    margin-right: 20px;
+  }
+
+  header a {
+    font-size: 14px;
+  }
+  .heading-text {
+    font-size: 24px;
+  }
+  .section_ip {
+    font-size: 13px;
+  }
+
+  button,
+  .video-server-status p {
+    font-size: 12px;
+  }
+
   form {
     padding: 15px;
     width: 100%;
@@ -634,5 +659,14 @@ form {
     height: 63px;
     margin-top: 1rem;
     /* bottom: 0rem; */
+  }
+  #open_edit_form {
+    width: 85%;
+  }
+  .form-group input {
+    width: 80%;
+  }
+  .submit-btn {
+    width: 90%;
   }
 }

@@ -60,11 +60,11 @@ signal_handler = SignalHandler()
 
 # AIOHTTP SERVER CONFIG
 HOST = "0.0.0.0"
-PORT = 8081
+PORT = 8080
 
 USERNAME = "admin"
 PASSWORD = "password"
-
+# acceleye-005a
 fixed_vs_server = os.getenv("SERVER_ID", "acceleye-005a")
 secret_key = os.getenv("SECRET_KEY")
 base_uri = os.getenv("URI", "https://api.accelx.net/gd_apidev/")
@@ -76,8 +76,10 @@ pwd = os.path.dirname(os.path.abspath(__file__))
 user_home = os.getenv("HOME_URL", "/home/root")
 app_directory = os.path.join(user_home, 'acceleye-detection-app')
 app_version = os.getenv("VERSION", "V 1.00")
-env_location = os.path.join(app_directory, ".env")
-load_dotenv(env_location)
+# env_location = os.path.join(app_directory, ".env")
+env_location = os.path.join("D://Nafis//Github repository clones//Gun-detection-module//src//.env", ".env")
+# load_dotenv(env_location)
+load_dotenv(dotenv_path=env_location)
 config_location = "D://Nafis//Github repository clones//Gun-detection-module//src//server_config.json"
 static_path = os.path.join(pwd, 'static')
 
@@ -1018,7 +1020,29 @@ async def stop_camera_thread(request):
         logger.error(f"Error stopping camera thread: {e}")
         return web.json_response({"error": "Internal server error"}, status=500)
     
-    
+"""Restart server codes"""
+async def restart_server_updated(request):
+    try:
+        request_data = await request.json()
+        trigger = request_data.get('trigger', 0)
+
+        if trigger == 1:
+            reset_result = await helper.reset_server_updated()
+            print(reset_result)
+
+        restart_result = await helper.restart_service_updated()
+        return web.json_response({
+            'status': 'success',
+            'message': restart_result,
+            'server_name': os.getenv("VIDEO_SERVER_NAME")  # Verify .env reload
+        })
+    except Exception as e:
+        return web.json_response({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)
+        
+
 async def init_app(loop):
     # Create an aiohttp app and set up routes
     app = web.Application()
@@ -1041,6 +1065,7 @@ async def init_app(loop):
     # app.router.add_post('/cameras/{camera_id}/stop', stop_camera)
     app.router.add_post('/cameras/{camera_id}/start', start_camera)
     app.router.add_post('/cameras/{camera_id}/stop_thread', stop_camera_thread)
+    app.router.add_post('/restart_server_updated', restart_server_updated)
 
     app.cleanup_ctx.append(websocket_manager)
     return app
