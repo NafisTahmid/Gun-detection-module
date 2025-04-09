@@ -1042,6 +1042,46 @@ async def restart_server_updated(request):
             'message': str(e)
         }, status=500)
         
+        
+
+async def restart_server_new():
+    """Restarts the server after a small delay."""
+    try:
+        # Small delay to ensure response is sent
+        await asyncio.sleep(1)  # 1-second delay
+        
+        # Reload .env and restart
+        load_dotenv(override=True)
+        cmd = [sys.executable] + sys.argv
+        
+        subprocess.Popen(
+            cmd,
+            stdin=sys.stdin,
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+            start_new_session=True,
+            env=os.environ.copy()
+        )
+        
+        # Terminate the current process
+        os.kill(os.getpid(), signal.SIGTERM)
+    
+    except Exception as e:
+        print(f"⚠️ Restart failed: {e}", file=sys.stderr)
+        sys.exit(1)
+
+async def handle_restart(request):
+    """API endpoint to trigger restart."""
+    response = web.json_response({
+        "ok": True,
+        "message": "Server restarting... (Check terminal)"
+    })
+    await response.prepare(request)
+    await response.write_eof()  # Ensure response is fully sent
+    
+    # Schedule restart with a delay
+    asyncio.create_task(restart_server_new())
+    return response
 
 async def init_app(loop):
     # Create an aiohttp app and set up routes
@@ -1065,7 +1105,7 @@ async def init_app(loop):
     # app.router.add_post('/cameras/{camera_id}/stop', stop_camera)
     app.router.add_post('/cameras/{camera_id}/start', start_camera)
     app.router.add_post('/cameras/{camera_id}/stop_thread', stop_camera_thread)
-    app.router.add_post('/restart_server_updated', restart_server_updated)
+    app.router.add_post('/restart_server_updated', handle_restart)
 
     app.cleanup_ctx.append(websocket_manager)
     return app

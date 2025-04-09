@@ -252,29 +252,31 @@ async def reset_server_updated():
     except Exception as e:
         return f"Reset error: {str(e)}"
 
+
 async def restart_service_updated():
-    """Proper server restart for local development"""
+    """Reliable server restart for Windows development"""
     try:
-        # Load latest .env variables
+        # 1. Reload environment variables
         load_dotenv(override=True)
         
-        # Get current Python and script path
+        # 2. Get current Python and script paths
         python = sys.executable
-        script = os.path.abspath("D://Nafis//Github repository clones//Gun-detection-module//src//server.py")  # Adjust if needed
+        # script_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "server.py"))
+        script_path = "server.py"
         
-            # Schedule current process exit
-        os.kill(os.getpid(), signal.SIGTERM)
+        print(f"Restarting with: {python} {script_path}")  # Debug output
         
-        # Start new process
-        new_process = await asyncio.create_subprocess_exec(
-            python, script,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-            stdin=asyncio.subprocess.DEVNULL
+        # 3. For Windows compatibility - use subprocess
+        import subprocess
+        subprocess.Popen(
+            [python, script_path],
+            creationflags=subprocess.CREATE_NEW_PROCESS_GROUP,
+            close_fds=True
         )
         
-    
+        # 4. Exit current process
+        os._exit(0)
         
-        return "Server restart initiated"
     except Exception as e:
         raise Exception(f"Restart failed: {str(e)}")
+

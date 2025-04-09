@@ -186,7 +186,7 @@ function handleRestartClick(factory_reset = 0) {
     })();
 }
 
-async function handleRestartClickUpdated(factory_reset = 0) {
+async function handleRestartClickUpdated(factory_reset = 1) {
     const loadingOverlay = document.getElementById('loading_overlay');
     loadingOverlay.style.display = 'flex';
     
@@ -194,14 +194,23 @@ async function handleRestartClickUpdated(factory_reset = 0) {
         const response = await fetch('/restart_server_updated', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ trigger: factory_reset })
         });
+
+        // Handle abrupt disconnections (server restart)
+        if (!response.ok) throw new Error(`HTTP error: ${response.status}`);
         
-        const result = await response.json();
-        
-        if (result.status === 'success') {
-            console.log("New server name:", result.server_name);
-            // Simple 5-second countdown
+        // Try to parse JSON (may fail if server restarts mid-request)
+        let result;
+        try {
+            result = await response.json();
+        } catch (e) {
+            console.log("Server restarted mid-request. Refreshing...");
+            window.location.reload();
+            return;
+        }
+
+        if (result.ok) {
+            console.log("Server restarting...");
             let seconds = 5;
             const timer = setInterval(() => {
                 console.log(`Reloading in ${seconds--}s...`);
